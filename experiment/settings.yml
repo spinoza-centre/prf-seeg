@@ -1,0 +1,43 @@
+monitor:
+  name: 7T
+  width: 69  # width of monitor (in cm)
+  distance: 225  # distance of participant from monitor (in cm)
+  gamma: 1  # specific value for gamma correction
+  verbose: True
+
+window:
+  units: pix
+
+eyetracker:
+  address: '100.1.1.1'
+  dot_size: 0.1  # in deg
+  options:
+    calibration_type: HV5
+
+stimuli:
+  fix_radius: 2.5
+  fix_color: 0.5
+  stim_size_pixels: 1024
+  aperture_radius: 500
+  refresh_rate: 120
+  bg_stim_h5file: 'stimuli/stims_1024.h5'
+  bg_stim_refresh_frames: 6
+  bar_refresh_frames: [48, 24, 12]
+  bar_directions: [-1, 0, 225, -1, 90, 315, -1, 180, 45, -1, 270, 135, -1]
+  bar_widths: [0.125, 0.25] # relative to n_mask_pixels
+  
+
+design:
+  mean_ifi_duration: 6.0
+  minimal_ifi_duration: 3.0
+  maximal_ifi_duration: 18.0
+  total_ifi_duration_leeway: 2.0
+  start_duration: 6
+  end_duration: 12
+  bar_duration: 6.0
+  blank_duration: 2.0
+
+various:
+  text_width: 250
+  text_height: 25
+  buttons: ['b', 'j', 'k', 'l', 'semicolon']
