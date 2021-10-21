@@ -4,10 +4,11 @@ import h5py
 import numpy as np
 import scipy.stats as ss
 from psychopy.visual import GratingStim
+from psychopy.core import getTime
 
 from exptools2.core import Session, PylinkEyetrackerSession
 from stimuli import FixationLines
-from trial import BarPassTrial, InstructionTrial, DummyWaiterTrial, OutroTrial
+from trial import BarPassTrial, InstructionTrial, DummyWaiterTrial, EmptyBarPassTrial, OutroTrial
 
 
 def _rotate_origin_only(x, y, radians):
@@ -70,8 +71,8 @@ class PRFBarPassSession(PylinkEyetrackerSession):
         #                                     size=self.settings['stimuli'].get('stim_size_pixels')) for bg_img in self.bg_images])
 
         # set up a bunch of stimulus aperture arrays
-        nr_frames_bar_pass = self.settings['stimuli'].get(
-            'refresh_rate') * self.settings['design'].get('bar_duration')
+        nr_frames_bar_pass = int(self.settings['stimuli'].get(
+            'refresh_rate') * self.settings['design'].get('bar_duration'))
         bar_directions = np.array(
             self.settings['stimuli'].get('bar_directions'))
         self.unique_bar_directions = np.unique(
@@ -81,10 +82,11 @@ class PRFBarPassSession(PylinkEyetrackerSession):
         self.aperture_dict = {}
         for bar_width in self.settings['stimuli'].get('bar_widths'):
             self.aperture_dict.update({bar_width: {}})
-            for bar_refresh_frames in self.settings['stimuli'].get('bar_refresh_frames'):
-                self.aperture_dict[bar_width].update({bar_refresh_frames: {}})
+            for bar_refresh_time in self.settings['stimuli'].get('bar_refresh_times'):
+                self.aperture_dict[bar_width].update({bar_refresh_time: {}})
+                bar_refresh_frames = bar_refresh_time * self.settings['stimuli'].get('refresh_rate')
                 for bar_direction in self.unique_bar_directions:
-                    self.aperture_dict[bar_width][bar_refresh_frames].update({bar_direction:
+                    self.aperture_dict[bar_width][bar_refresh_time].update({bar_direction:
                                                                               self.create_apertures(
                                                                                   n_mask_pixels=self.settings['stimuli'].get(
                                                                                       'stim_size_pixels'),
@@ -118,7 +120,7 @@ class PRFBarPassSession(PylinkEyetrackerSession):
 
         return op_apertures
 
-    def bar_stimulus_lookup(self, bar_width, bar_direction, bar_refresh_frames):
+    def bar_stimulus_lookup(self, bar_width, bar_direction, bar_refresh_time):
         """bar_stimulus_lookup creates a lookup-table for 
         which apertures and which bg images will be shown when during this bar pass. 
         They index different number of items, since the refresh of the bar and the bg
@@ -127,14 +129,14 @@ class PRFBarPassSession(PylinkEyetrackerSession):
         Args:
             bar_width (float): width of bar in fraction relative to stim size
             bar_direction (float): orientation of bar in degrees
-            bar_refresh_frames (int): nr of display frames for which a single bar is shown
+            bar_refresh_time (int): nr of display frames for which a single bar is shown
         """
         bar_frames = np.arange(
-            self.aperture_dict[bar_width][bar_refresh_frames][bar_direction].shape[0])
-        nr_display_frames_bar = self.settings['stimuli'].get(
-            'refresh_rate') * self.settings['design'].get('bar_duration')
-        nr_frames_bar_pass = nr_display_frames_bar / \
-            self.settings['stimuli'].get('bg_stim_refresh_frames')
+            self.aperture_dict[bar_width][bar_refresh_time][bar_direction].shape[0])
+        nr_display_frames_bar = int(self.settings['stimuli'].get(
+            'refresh_rate') * self.settings['design'].get('bar_duration'))
+        nr_frames_bar_pass = int(nr_display_frames_bar * \
+            self.settings['stimuli'].get('bg_stim_refresh_time'))
         # the following ensures that subsequent frames of the bg do not accidentally repeat
         bg_stim_frames = np.mod(
             np.cumsum(
@@ -162,40 +164,36 @@ class PRFBarPassSession(PylinkEyetrackerSession):
             self.settings['stimuli'].get('bar_directions'))
         bar_widths = np.array(
             self.settings['stimuli'].get('bar_widths'))
-        bar_refresh_frames = np.array(
-            self.settings['stimuli'].get('bar_refresh_frames'))
+        bar_refresh_times = np.array(
+            self.settings['stimuli'].get('bar_refresh_times'))
 
         # random ordering for bar parameters
-        bwi = np.array([np.random.choice(np.arange(len(bar_widths)))
-                        for x in range(len(bar_refresh_frames))])
-        brfi = np.array([np.random.choice(np.arange(len(bar_refresh_frames)))
+        bwi = np.array([np.random.choice(np.arange(len(bar_widths)),len(bar_widths))
+                        for x in range(len(bar_refresh_times))])
+        brti = np.array([np.random.choice(np.arange(len(bar_refresh_times)),len(bar_refresh_times))
                          for x in range(len(bar_widths))])
+        print(bwi, brti)
 
         self.trials = [instruction_trial, dummy_trial]
         trial_counter = 2
         start_time = 0
         for i in range(len(bar_widths)):
-            for j in range(len(bar_refresh_frames)):
+            for j in range(len(bar_refresh_times)):
                 for k, bd in enumerate(bar_directions):
                     if bar_directions[k] < 0:  # no bar during these, they are blanks
                         bw = -1
-                        brf = 1
-                        phase_durations = [
-                            self.settings['design'].get('blank_duration')]
+                        brt = 1    
+                        phase_durations = [self.settings['design'].get('blank_duration')]
                     else:
-                        bw = bar_widths[bwi[j, i]],
-                        brf = bar_refresh_frames[brfi[i, j]]
-                        phase_durations = [
-                            self.settings['design'].get('bar_duration')]
+                        bw = bar_widths[bwi[j, i]]
+                        brt = bar_refresh_times[brti[i, j]]
+                        phase_durations = [self.settings['design'].get('bar_duration')]
                     parameters = {'bar_width': bw,
-                                  'bar_refresh_frames': brf,
+                                  'bar_refresh_times': brt,
                                   'bar_direction': bd,
                                   'start_time': start_time}
-                    parameters.update(self.bar_stimulus_lookup(bar_width=bw,
-                                                               bar_direction=bd,
-                                                               bar_refresh_frames=brf))
-
-                    self.trials.append(BarPassTrial(
+                    if bd == -1:                        
+                        self.trials.append(EmptyBarPassTrial(
                         session=self,
                         trial_nr=trial_counter,
                         phase_durations=phase_durations,
@@ -203,6 +201,18 @@ class PRFBarPassSession(PylinkEyetrackerSession):
                         parameters=parameters,
                         timing='seconds',
                         verbose=True))
+                    else:
+                        parameters.update(self.bar_stimulus_lookup(bar_width=bw,
+                                            bar_direction=bd,
+                                            bar_refresh_time=brt))
+                        self.trials.append(BarPassTrial(
+                            session=self,
+                            trial_nr=trial_counter,
+                            phase_durations=phase_durations,
+                            phase_names=['stim'],
+                            parameters=parameters,
+                            timing='seconds',
+                            verbose=True))
 
                     trial_counter = trial_counter + 1
                     start_time = start_time + phase_durations[0]

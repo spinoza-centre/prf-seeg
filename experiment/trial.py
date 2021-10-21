@@ -1,5 +1,7 @@
+import math
 import numpy as np
 from exptools2.core import Trial
+from psychopy.core import getTime
 from psychopy.visual import TextStim
 from stimuli import FixationLines
 
@@ -32,20 +34,18 @@ class BarPassTrial(Trial):
         """
         super().__init__(session, trial_nr, phase_durations, phase_names,
                          parameters, timing, load_next_during_phase=None, verbose=verbose)
-        self.condition = self.parameters['condition']
-        self.fix_changed = False
     
     def draw(self):
 
-        total_display_time = (self.session.timer.getTime() - self.session.experiment_start_time)
+        total_display_time = (getTime() - self.session.experiment_start_time)
         trial_display_time = total_display_time - self.parameters['start_time']
-        trial_display_frame = int(trial_display_time * self.session.settings['stimuli'].get('refresh_rate'))
-        bg_display_frame = trial_display_frame // self.session.settings['stimuli'].get('bg_stim_refresh_frames')
+        # trial_display_frame = int(trial_display_time * self.session.settings['stimuli'].get('refresh_rate'))
+        bg_display_frame = math.floor(trial_display_time / self.session.settings['stimuli'].get('bg_stim_refresh_time'))
         # stimulus object
-        bg_stim = self.session.image_bg_stims[self.parameters['bg_stim_frames'][bg_display_frame]]
+        bg_stim = self.session.image_bg_stims[self.parameters['bg_stim_times'][bg_display_frame]]
         # fill in the binary mask
-        bar_display_frame = trial_display_frame // self.session.settings['stimuli'].get('bar_refresh_frames')
-        bg_stim.mask = self.session.aperture_dict[self.parameters['bar_width']][self.parameters['bar_refresh_frames']][self.parameters['bar_direction']][self.parameters['bar_display_frames'][bar_display_frame]]
+        bar_display_frame = int(trial_display_time / self.parameters['bar_refresh_time'])
+        bg_stim.mask = self.session.aperture_dict[self.parameters['bar_width']][self.parameters['bar_refresh_time']][self.parameters['bar_direction']][self.parameters['bar_display_frames'][bar_display_frame]]
         
         bg_stim.draw()
 
@@ -69,7 +69,7 @@ class InstructionTrial(Trial):
             txt = '''Press any button to continue.'''
 
         self.text = TextStim(self.session.win, txt,
-                             height=txt_height, wrapWidth=txt_width, **kwargs)
+                             height=txt_height, wrapWidth=txt_width)
 
         self.keys = keys
 
@@ -117,7 +117,20 @@ class DummyWaiterTrial(InstructionTrial):
                         ## TRIGGER HERE
                         #####################################################
                         self.stop_phase()
-                        self.session.experiment_start_time = self.session.timer.getTime()
+                        self.session.experiment_start_time = getTime()
+
+
+class EmptyBarPassTrial(InstructionTrial):
+    """ Simple trial with text (trial x) and fixation. """
+
+    def __init__(self, session, trial_nr, phase_durations=None,
+                 txt="", **kwargs):
+
+        super().__init__(session, trial_nr, phase_durations, txt, **kwargs)
+    
+    def draw(self):
+        self.session.fixation.draw()
+        self.session.report_fixation.draw()
 
 class OutroTrial(InstructionTrial):
     """ Simple trial with only fixation cross.  """
