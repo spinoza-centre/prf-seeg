@@ -39,13 +39,15 @@ class PRFBarPassSession(PylinkEyetrackerSession):
 
         self.fixation = FixationLines(win=self.win,
                                       circle_radius=self.settings['stimuli'].get(
-                                          'aperture_radius')*2,
-                                      color=(1, -1, -1))
+                                          'stim_size_pixels'),
+                                      color=(1, -1, -1),
+                                      **{'lineWidth':self.settings['stimuli'].get('outer_fix_linewidth')})
 
         self.report_fixation = FixationLines(win=self.win,
                                              circle_radius=self.settings['stimuli'].get(
                                                  'fix_radius')*2,
-                                             color=self.settings['stimuli'].get('fix_color'))
+                                             color=self.settings['stimuli'].get('fix_color'),
+                                             **{'lineWidth':self.settings['stimuli'].get('inner_fix_linewidth')})
         
         self.create_stimuli()
 
@@ -61,7 +63,8 @@ class PRFBarPassSession(PylinkEyetrackerSession):
         print(self.bg_images.shape)
         self.image_bg_stims = [GratingStim(win=self.win,
                                            tex=bg_img,
-                                           units='pix',
+                                           units='pix', 
+                                           texRes=self.bg_images.shape[1],
                                            colorSpace='rgb',
                                            size=self.settings['stimuli'].get('stim_size_pixels'))
                                for bg_img in self.bg_images]
@@ -88,8 +91,7 @@ class PRFBarPassSession(PylinkEyetrackerSession):
                 for bar_direction in self.unique_bar_directions:
                     self.aperture_dict[bar_width][bar_refresh_time].update({bar_direction:
                                                                               self.create_apertures(
-                                                                                  n_mask_pixels=self.settings['stimuli'].get(
-                                                                                      'stim_size_pixels'),
+                                                                                  n_mask_pixels=self.bg_images.shape[1],
                                                                                   bar_direction=bar_direction,
                                                                                   bar_width=bar_width,
                                                                                   nr_bar_steps=int(nr_frames_bar_pass/bar_refresh_frames)
@@ -100,23 +102,24 @@ class PRFBarPassSession(PylinkEyetrackerSession):
         """create apertures from settings.
         """
         # middle of bars
-        bar_step_positions = np.linspace(-bar_width/2,
-                                         1+bar_width/2, nr_bar_steps, endpoint=True)
+        bar_step_positions = np.linspace(-bar_width-1,
+                                         1+bar_width, nr_bar_steps, endpoint=True)
 
         # circular aperture is there for everyone
         X, Y = np.meshgrid(np.linspace(-1, 1, n_mask_pixels, endpoint=True),
                            np.linspace(-1, 1, n_mask_pixels, endpoint=True))
         ecc = np.sqrt(X**2+Y**2)
-        circular_aperture = ecc < (2*self.settings['stimuli'].get(
-            'aperture_radius') / n_mask_pixels)
+        circular_aperture = ecc < self.settings['stimuli'].get('aperture_radius')
 
         # bar apertures
         X, Y = _rotate_origin_only(X, Y, np.deg2rad(bar_direction))
 
-        op_apertures = np.zeros([nr_bar_steps] + list(X.shape), dtype=bool)
+        op_apertures = np.zeros([nr_bar_steps] + list(X.shape), dtype=np.int8)
         for i, bsp in enumerate(bar_step_positions):
-            op_apertures[i] = (X > (bsp-bar_width/2)) & (X < (bsp+bar_width/2))
+            op_apertures[i] = (X > (bsp-bar_width)) & (X < (bsp+bar_width))
             op_apertures[i] *= circular_aperture
+
+        op_apertures = (op_apertures * 2) - 1
 
         return op_apertures
 
@@ -131,19 +134,21 @@ class PRFBarPassSession(PylinkEyetrackerSession):
             bar_direction (float): orientation of bar in degrees
             bar_refresh_time (int): nr of display frames for which a single bar is shown
         """
-        bar_frames = np.arange(
+        bar_display_frames = np.arange(
             self.aperture_dict[bar_width][bar_refresh_time][bar_direction].shape[0])
-        nr_display_frames_bar = int(self.settings['stimuli'].get(
-            'refresh_rate') * self.settings['design'].get('bar_duration'))
-        nr_frames_bar_pass = int(nr_display_frames_bar * \
-            self.settings['stimuli'].get('bg_stim_refresh_time'))
+        # nr_display_frames_bar = int(self.settings['stimuli'].get(
+        #     'refresh_rate') * self.settings['design'].get('bar_duration'))
+        # nr_frames_bar_pass = int(nr_display_frames_bar * \
+        #     self.settings['stimuli'].get('bg_stim_refresh_time'))
+        nr_bg_frames_par_pass = int(self.settings['design'].get('bar_duration') / self.settings['stimuli'].get('bg_stim_refresh_time'))
+            
         # the following ensures that subsequent frames of the bg do not accidentally repeat
         bg_stim_frames = np.mod(
             np.cumsum(
-                np.random.randint(1, len(self.image_bg_stims)-2, size=nr_frames_bar_pass)),
-            len(self.image_bg_stims)-1) + 1
+                np.random.randint(1, len(self.image_bg_stims)-2, size=nr_bg_frames_par_pass+2)),
+            len(self.image_bg_stims))
 
-        return {'bar_frames': bar_frames, 'bg_stim_frames': bg_stim_frames}
+        return {'bar_display_frames': bar_display_frames, 'bg_stim_frames': bg_stim_frames}
 
     def create_trials(self):
         """ Creates trials (ideally before running your session!) """
@@ -176,7 +181,7 @@ class PRFBarPassSession(PylinkEyetrackerSession):
 
         self.trials = [instruction_trial, dummy_trial]
         trial_counter = 2
-        start_time = 0
+        start_time = self.settings['design'].get('start_duration')
         for i in range(len(bar_widths)):
             for j in range(len(bar_refresh_times)):
                 for k, bd in enumerate(bar_directions):
@@ -189,7 +194,7 @@ class PRFBarPassSession(PylinkEyetrackerSession):
                         brt = bar_refresh_times[brti[i, j]]
                         phase_durations = [self.settings['design'].get('bar_duration')]
                     parameters = {'bar_width': bw,
-                                  'bar_refresh_times': brt,
+                                  'bar_refresh_time': brt,
                                   'bar_direction': bd,
                                   'start_time': start_time}
                     if bd == -1:                        
