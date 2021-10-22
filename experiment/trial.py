@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+
 import math
 import numpy as np
 from exptools2.core import Trial
@@ -104,12 +107,21 @@ class InstructionTrial(Trial):
 
         txt_height = self.session.settings['various'].get('text_height')
         txt_width = self.session.settings['various'].get('text_width')
+        text_position_x = self.session.settings['various'].get('text_position_x')
+        text_position_y = self.session.settings['various'].get('text_position_y')
 
         if txt is None:
             txt = '''Press any button to continue.'''
 
         self.text = TextStim(self.session.win, txt,
-                             height=txt_height, wrapWidth=txt_width)
+                             height=txt_height, 
+                             wrapWidth=txt_width, 
+                             pos=[text_position_x, text_position_y],
+                             font='Songti SC',
+                             alignText = 'center',
+                             anchorHoriz = 'center',
+                             anchorVert = 'center')
+        self.text.setSize(txt_height)
 
         self.keys = keys
 

@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+
 import os
 import math
 import h5py
@@ -35,7 +38,6 @@ class PRFBarPassSession(PylinkEyetrackerSession):
         """
         super().__init__(output_str, output_dir=output_dir, settings_file=settings_file,
                          eyetracker_on=eyetracker_on)  # initialize parent class!
-        self.n_trials = self.settings['design'].get('n_trials')
 
         self.fixation = FixationLines(win=self.win,
                                       circle_radius=self.settings['stimuli'].get(
@@ -170,14 +172,14 @@ class PRFBarPassSession(PylinkEyetrackerSession):
         instruction_trial = InstructionTrial(session=self,
                                              trial_nr=0,
                                              phase_durations=[np.inf],
-                                             txt='Please keep fixating at the center.',
+                                             txt=u'请一直注视屏幕中央，这是最重要的',
                                              keys=['space'])
 
         dummy_trial = DummyWaiterTrial(session=self,
                                        trial_nr=1,
                                        phase_durations=[
-                                           np.inf, self.settings['design'].get('start_duration')],
-                                       txt='Waiting for experiment to start')
+                                       np.inf, self.settings['design'].get('start_duration')],
+                                       txt=u'"t" 将开始实验。 报告固定十字的所有变化')
 
         bar_directions = np.array(
             self.settings['stimuli'].get('bar_directions'))

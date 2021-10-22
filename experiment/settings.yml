@@ -24,7 +24,7 @@ stimuli:
   refresh_rate: 120
   bg_stim_h5file: 'stimuli/stims_1024.h5'
   bg_stim_url: 'https://figshare.com/ndownloader/files/31165414'
-  bg_stim_refresh_time: 0.05 # in s, 20Hz
+  bg_stim_refresh_time: 0.1 # in s, 20Hz
   bar_refresh_times: [0.1] # s
   bar_directions: [-1, 0, 225, -1, 90, 315, -1, 180, 45, -1, 270, 135, -1]
   bar_widths: [0.1, 0.2, 0.3] # relative to total bg stimulus size
@@ -38,6 +38,8 @@ design:
   blank_duration: 2.0
 
 various:
-  text_width: 250
-  text_height: 25
+  text_width: 500
+  text_height: 40
+  text_position_x: 0
+  text_position_y: 100
   buttons: ['b', 'j', 'k', 'l', 'semicolon']
