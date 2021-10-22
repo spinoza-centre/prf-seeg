@@ -1,6 +1,10 @@
 import os.path as op
 import argparse
 from psychopy import logging
+from psychopy import prefs
+#change the pref libraty to PTB and set the latency mode to high precision
+prefs.hardware['audioLib'] = 'PTB'
+prefs.hardware['audioLatencyMode'] = 3
 
 from session import PRFBarPassSession
 
