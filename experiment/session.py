@@ -63,7 +63,7 @@ class PRFBarPassSession(PylinkEyetrackerSession):
         self.fix_event_times = np.cumsum(self.fix_event_durations)
         self.stimulus_changed = False
         self.last_fix_event = 0
-        np.savetxt(os.path.join(self.output_dir, self.output_str + '_fix_events.tsv'), self.fix_event_times, sep='\t')
+        np.savetxt(os.path.join(self.output_dir, self.output_str + '_fix_events.tsv'), self.fix_event_times, delimiter='\t')
 
     def create_stimuli(self):
         """create stimuli, both background bitmaps, and bar apertures
