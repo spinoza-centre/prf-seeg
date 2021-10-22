@@ -68,7 +68,31 @@ class BarPassTrial(Trial):
         self.session.fixation.draw()
         self.session.report_fixation.draw()
 
+    # def get_events(self):
+    #     events = super().get_events()
+    #     pass
 
+class EmptyBarPassTrial(Trial):
+    """ Simple trial with text (trial x) and fixation. """
+
+    def __init__(self, session, trial_nr, phase_durations=None, **kwargs):
+
+        super().__init__(session, trial_nr, phase_durations, **kwargs)
+    
+    def draw(self):
+        total_display_time = (getTime() - self.session.experiment_start_time)
+        trial_display_time = total_display_time - self.parameters['start_time']
+
+        if total_display_time > self.session.fix_event_times[self.session.last_fix_event]:
+            self.session.last_fix_event = self.session.last_fix_event + 1
+            self.session.report_fixation.setColor(-1 * self.session.report_fixation.color)
+
+        self.session.fixation.draw()
+        self.session.report_fixation.draw()
+
+    # def get_events(self):
+    #     events = super().get_events()
+    #     pass
 
 class InstructionTrial(Trial):
     """ Simple trial with instruction text. """
@@ -135,26 +159,6 @@ class DummyWaiterTrial(InstructionTrial):
                         ## TRIGGER HERE
                         #####################################################
                         self.session.experiment_start_time = getTime()
-
-
-class EmptyBarPassTrial(InstructionTrial):
-    """ Simple trial with text (trial x) and fixation. """
-
-    def __init__(self, session, trial_nr, phase_durations=None,
-                 txt="", **kwargs):
-
-        super().__init__(session, trial_nr, phase_durations, txt, **kwargs)
-    
-    def draw(self):
-        total_display_time = (getTime() - self.session.experiment_start_time)
-        trial_display_time = total_display_time - self.parameters['start_time']
-
-        if total_display_time > self.session.fix_event_times[self.session.last_fix_event]:
-            self.session.last_fix_event = self.session.last_fix_event + 1
-            self.session.report_fixation.setColor(-1 * self.session.report_fixation.color)
-
-        self.session.fixation.draw()
-        self.session.report_fixation.draw()
 
 class OutroTrial(InstructionTrial):
     """ Simple trial with only fixation cross.  """
