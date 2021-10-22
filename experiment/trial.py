@@ -36,11 +36,19 @@ class BarPassTrial(Trial):
                          parameters, timing, load_next_during_phase=None, verbose=verbose)
         # print(self.parameters)
     
+    def run(self):
+
+        #####################################################
+        ## TRIGGER HERE
+        #####################################################
+
+        super().run()  # run parent class!
+
+
     def draw(self):
 
         total_display_time = (getTime() - self.session.experiment_start_time)
         trial_display_time = total_display_time - self.parameters['start_time']
-        # trial_display_frame = int(trial_display_time * self.session.settings['stimuli'].get('refresh_rate'))
         bg_display_frame = math.floor(trial_display_time / self.session.settings['stimuli'].get('bg_stim_refresh_time'))
         # stimulus object
         bg_stim = self.session.image_bg_stims[self.parameters['bg_stim_frames'][bg_display_frame]]
@@ -52,6 +60,10 @@ class BarPassTrial(Trial):
         bg_stim.mask = self.session.aperture_dict[self.parameters['bar_width']][self.parameters['bar_refresh_time']][self.parameters['bar_direction']][which_mask]
         
         bg_stim.draw()
+        
+        if total_display_time > self.session.fix_event_times[self.session.last_fix_event]:
+            self.session.last_fix_event = self.session.last_fix_event + 1
+            self.session.report_fixation.setColor(-1 * self.session.report_fixation.color)
 
         self.session.fixation.draw()
         self.session.report_fixation.draw()
@@ -134,6 +146,13 @@ class EmptyBarPassTrial(InstructionTrial):
         super().__init__(session, trial_nr, phase_durations, txt, **kwargs)
     
     def draw(self):
+        total_display_time = (getTime() - self.session.experiment_start_time)
+        trial_display_time = total_display_time - self.parameters['start_time']
+
+        if total_display_time > self.session.fix_event_times[self.session.last_fix_event]:
+            self.session.last_fix_event = self.session.last_fix_event + 1
+            self.session.report_fixation.setColor(-1 * self.session.report_fixation.color)
+
         self.session.fixation.draw()
         self.session.report_fixation.draw()
 

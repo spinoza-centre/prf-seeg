@@ -50,6 +50,20 @@ class PRFBarPassSession(PylinkEyetrackerSession):
                                              **{'lineWidth':self.settings['stimuli'].get('inner_fix_linewidth')})
         
         self.create_stimuli()
+        self.create_trials()
+        self.create_fixation_mark_times()
+    
+    def create_fixation_mark_times(self):
+        # twice too many events for safety
+        nr_events = 2 * self.total_time / self.settings['design'].get('mean_ifi_duration')
+        self.fix_event_durations = np.random.rand(int(nr_events))
+        self.fix_event_durations = self.fix_event_durations * self.settings['design'].get('ifi_duration_range')
+        self.fix_event_durations = self.fix_event_durations + self.settings['design'].get('mean_ifi_duration') - self.settings['design'].get('ifi_duration_range')
+
+        self.fix_event_times = np.cumsum(self.fix_event_durations)
+        self.stimulus_changed = False
+        self.last_fix_event = 0
+        np.savetxt(os.path.join(self.output_dir, self.output_str + '_fix_events.tsv'), self.fix_event_times, sep='\t')
 
     def create_stimuli(self):
         """create stimuli, both background bitmaps, and bar apertures
@@ -227,8 +241,9 @@ class PRFBarPassSession(PylinkEyetrackerSession):
                                  phase_durations=[
                                      self.settings['design'].get('end_duration')],
                                  txt='')
-
+        
         self.trials.append(outro_trial)
+        self.total_time = start_time + self.settings['design'].get('end_duration')
 
     def create_trial(self):
         pass

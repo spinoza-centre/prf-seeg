@@ -37,7 +37,6 @@ session_object = PRFBarPassSession(output_str=output_str,
                         output_dir=None,
                         settings_file=settings_fn, 
                         eyetracker_on=eyetracker_on)
-session_object.create_trials()
 logging.warn(f'Writing results to: {op.join(session_object.output_dir, session_object.output_str)}')
 session_object.run()
 session_object.close()
