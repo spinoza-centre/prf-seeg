@@ -4,7 +4,9 @@
 import os
 import math
 import h5py
+import urllib
 import numpy as np
+from psychopy import logging
 import scipy.stats as ss
 from psychopy.visual import GratingStim
 from psychopy.core import getTime
@@ -38,18 +40,11 @@ class PRFBarPassSession(PylinkEyetrackerSession):
         """
         super().__init__(output_str, output_dir=output_dir, settings_file=settings_file,
                          eyetracker_on=eyetracker_on)  # initialize parent class!
-
-        self.fixation = FixationLines(win=self.win,
-                                      circle_radius=self.settings['stimuli'].get(
-                                          'stim_size_pixels'),
-                                      color=(1, -1, -1),
-                                      **{'lineWidth':self.settings['stimuli'].get('outer_fix_linewidth')})
-
-        self.report_fixation = FixationLines(win=self.win,
-                                             circle_radius=self.settings['stimuli'].get(
-                                                 'fix_radius')*2,
-                                             color=self.settings['stimuli'].get('fix_color'),
-                                             **{'lineWidth':self.settings['stimuli'].get('inner_fix_linewidth')})
+        # stimulus materials
+        stim_file_path = os.path.join(os.path.split(__file__)[0], self.settings['stimuli'].get('bg_stim_h5file'))
+        if not os.path.isfile(stim_file_path):
+            logging.warn(f'Downloading stimulus file from figshare to {stim_file_path}')
+            urllib.request.urlretrieve(self.settings['stimuli'].get('bg_stim_url'), stim_file_path)
         
         self.create_stimuli()
         self.create_trials()
@@ -71,6 +66,18 @@ class PRFBarPassSession(PylinkEyetrackerSession):
         """create stimuli, both background bitmaps, and bar apertures
         """
 
+        self.fixation = FixationLines(win=self.win,
+                                      circle_radius=self.settings['stimuli'].get(
+                                          'stim_size_pixels'),
+                                      color=(1, -1, -1),
+                                      **{'lineWidth':self.settings['stimuli'].get('outer_fix_linewidth')})
+
+        self.report_fixation = FixationLines(win=self.win,
+                                             circle_radius=self.settings['stimuli'].get(
+                                                 'fix_radius')*2,
+                                             color=self.settings['stimuli'].get('fix_color'),
+                                             **{'lineWidth':self.settings['stimuli'].get('inner_fix_linewidth')})
+                                             
         h5stimfile = h5py.File(os.path.join(os.path.split(__file__)[
                                0], self.settings['stimuli'].get('bg_stim_h5file')), 'r')
         self.bg_images = -1 + np.array(h5stimfile.get(
@@ -98,21 +105,24 @@ class PRFBarPassSession(PylinkEyetrackerSession):
             bar_directions[bar_directions >= 0])
         # self.unique_bar_directions = self.unique_bar_directions[
         #     self.unique_bar_directions < 180]
+
         self.aperture_dict = {}
-        for bar_width in self.settings['stimuli'].get('bar_widths'):
-            self.aperture_dict.update({bar_width: {}})
-            for bar_refresh_time in self.settings['stimuli'].get('bar_refresh_times'):
-                self.aperture_dict[bar_width].update({bar_refresh_time: {}})
-                bar_refresh_frames = bar_refresh_time * self.settings['stimuli'].get('refresh_rate')
-                for bar_direction in self.unique_bar_directions:
-                    self.aperture_dict[bar_width][bar_refresh_time].update({bar_direction:
-                                                                              self.create_apertures(
-                                                                                  n_mask_pixels=self.bg_images.shape[1],
-                                                                                  bar_direction=bar_direction,
-                                                                                  bar_width=bar_width,
-                                                                                  nr_bar_steps=int(nr_frames_bar_pass/bar_refresh_frames)
-                                                                              )
-                                                                              })
+        with h5py.File(os.path.join(self.output_dir, self.output_str + '_apertures.h5'), 'w') as h5f:
+            for bar_width in self.settings['stimuli'].get('bar_widths'):
+                self.aperture_dict.update({bar_width: {}})
+                for bar_refresh_time in self.settings['stimuli'].get('bar_refresh_times'):
+                    self.aperture_dict[bar_width].update({bar_refresh_time: {}})
+                    bar_refresh_frames = bar_refresh_time * self.settings['stimuli'].get('refresh_rate')
+                    for bar_direction in self.unique_bar_directions:
+                        these_apertures = self.create_apertures(n_mask_pixels=self.bg_images.shape[1],
+                                                                bar_direction=bar_direction,
+                                                                bar_width=bar_width,
+                                                                nr_bar_steps=int(nr_frames_bar_pass/bar_refresh_frames))
+                        self.aperture_dict[bar_width][bar_refresh_time].update({bar_direction: these_apertures})
+
+                        # save to h5file
+                        ds_name = f'{bar_width}_{bar_refresh_time}_{bar_direction}'
+                        h5f.create_dataset(ds_name, data=these_apertures, compression=6)
 
     def create_apertures(self, n_mask_pixels, bar_direction, bar_width, nr_bar_steps):
         """create apertures from settings.
@@ -130,12 +140,12 @@ class PRFBarPassSession(PylinkEyetrackerSession):
         # bar apertures
         X, Y = _rotate_origin_only(X, Y, np.deg2rad(bar_direction))
 
-        op_apertures = np.zeros([nr_bar_steps] + list(X.shape), dtype=np.int8)
+        op_apertures = np.zeros([nr_bar_steps] + list(X.shape), dtype=bool)
         for i, bsp in enumerate(bar_step_positions):
             op_apertures[i] = (X > (bsp-bar_width)) & (X < (bsp+bar_width))
             op_apertures[i] *= circular_aperture
 
-        op_apertures = (op_apertures * 2) - 1
+        # op_apertures = (op_apertures * 2) - 1
 
         return op_apertures
 

@@ -38,7 +38,7 @@ design:
   blank_duration: 2.0
 
 various:
-  text_width: 500
+  text_width: 300
   text_height: 40
   text_position_x: 0
   text_position_y: 100

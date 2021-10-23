@@ -60,8 +60,8 @@ class BarPassTrial(Trial):
 
         which_mask = np.min([self.parameters['bar_display_frames'][bar_display_frame], self.session.aperture_dict[self.parameters['bar_width']][self.parameters['bar_refresh_time']][self.parameters['bar_direction']].shape[0]])
 
-        bg_stim.mask = self.session.aperture_dict[self.parameters['bar_width']][self.parameters['bar_refresh_time']][self.parameters['bar_direction']][which_mask]
-        
+        mask = self.session.aperture_dict[self.parameters['bar_width']][self.parameters['bar_refresh_time']][self.parameters['bar_direction']][which_mask]
+        bg_stim.mask = (mask * 2) - 1
         bg_stim.draw()
         
         if total_display_time > self.session.fix_event_times[self.session.last_fix_event]:
