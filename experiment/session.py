@@ -217,7 +217,8 @@ class PRFBarPassSession(PylinkEyetrackerSession):
                     parameters = {'bar_width': bw,
                                   'bar_refresh_time': brt,
                                   'bar_direction': bd,
-                                  'start_time': start_time}
+                                  'start_time': start_time,
+                                  'bg_stim_refresh_time': self.settings['stimuli'].get('bg_stim_refresh_time')}
                     if bd == -1:                        
                         self.trials.append(EmptyBarPassTrial(
                         session=self,
@@ -228,9 +229,10 @@ class PRFBarPassSession(PylinkEyetrackerSession):
                         timing='seconds',
                         verbose=True))
                     else:
-                        parameters.update(self.bar_stimulus_lookup(bar_width=bw,
+
+                        blt = self.bar_stimulus_lookup(bar_width=bw,
                                             bar_direction=bd,
-                                            bar_refresh_time=brt))
+                                            bar_refresh_time=brt)
                         self.trials.append(BarPassTrial(
                             session=self,
                             trial_nr=trial_counter,
@@ -238,6 +240,8 @@ class PRFBarPassSession(PylinkEyetrackerSession):
                             phase_names=['stim'],
                             parameters=parameters,
                             timing='seconds',
+                            aperture_sequence=blt['bar_display_frames'],
+                            bg_img_sequence=blt['bg_stim_frames'],
                             verbose=True))
 
                     trial_counter = trial_counter + 1
@@ -270,3 +274,11 @@ class PRFBarPassSession(PylinkEyetrackerSession):
             trial.run()
 
         self.close()
+
+    def close(self):
+        h5_seq_file = os.path.join(self.output_dir, self.output_str + '_seq_timing.h5')
+        for trial in self.trials:
+            if type(trial) == BarPassTrial:
+                trial.bg_img_sequence_df.to_hdf(h5_seq_file, key='trial_{trial.trial_nr}/bg_imgs', mode='a')
+                trial.aperture_sequence_df.to_hdf(h5_seq_file, key='trial_{trial.trial_nr}/apertures', mode='a')                
+        super().close()  # close parent class!

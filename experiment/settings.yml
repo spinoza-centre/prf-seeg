@@ -15,7 +15,7 @@ eyetracker:
     calibration_type: HV5
 
 stimuli:
-  fix_radius: 5
+  fix_radius: 8
   fix_color: 1.0
   inner_fix_linewidth: 6
   outer_fix_linewidth: 2

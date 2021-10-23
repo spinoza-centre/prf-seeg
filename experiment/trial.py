@@ -3,6 +3,7 @@
 
 import math
 import numpy as np
+import pandas as pd
 from exptools2.core import Trial
 from psychopy.core import getTime
 from psychopy.visual import TextStim
@@ -11,7 +12,7 @@ from stimuli import FixationLines
 class BarPassTrial(Trial):
     
     def __init__(self, session, trial_nr, phase_durations, phase_names,
-                 parameters, timing, 
+                 parameters, timing, aperture_sequence, bg_img_sequence,
                  verbose=True):
         """ Initializes a BarPassTrial object. 
         
@@ -38,6 +39,22 @@ class BarPassTrial(Trial):
         super().__init__(session, trial_nr, phase_durations, phase_names,
                          parameters, timing, load_next_during_phase=None, verbose=verbose)
         # print(self.parameters)
+        # internalize these sequences and their expected times in the trials
+
+        expected_aperture_times = self.parameters['start_time'] + np.arange(len(aperture_sequence)+1) * self.parameters['bar_refresh_time']
+        expected_bg_img_times = self.parameters['start_time'] + np.arange(len(bg_img_sequence)+1) * self.parameters['bg_stim_refresh_time']
+
+        self.aperture_sequence_df = pd.DataFrame(np.array([np.r_[aperture_sequence, 0], 
+                                            expected_aperture_times, 
+                                            np.zeros_like(expected_aperture_times)]).T, 
+                                                columns=['seq_index', 'expected_time', 'empirical_time'])
+        self.bg_img_sequence_df = pd.DataFrame(np.array([np.r_[bg_img_sequence, 0], 
+                                            expected_bg_img_times, 
+                                            np.zeros_like(expected_bg_img_times)]).T, 
+                                                columns=['seq_index', 'expected_time', 'empirical_time'])
+
+        self.bg_display_frame = -1
+        self.bar_display_frame = -1
     
     def run(self):
 
@@ -53,14 +70,21 @@ class BarPassTrial(Trial):
         total_display_time = (getTime() - self.session.experiment_start_time)
         trial_display_time = total_display_time - self.parameters['start_time']
         bg_display_frame = math.floor(trial_display_time / self.session.settings['stimuli'].get('bg_stim_refresh_time'))
-        # stimulus object
-        bg_stim = self.session.image_bg_stims[self.parameters['bg_stim_frames'][bg_display_frame]]
-        # fill in the binary mask
+        if bg_display_frame != self.bg_display_frame:
+            self.bg_display_frame = bg_display_frame
+            self.bg_img_sequence_df['empirical_time'].loc[bg_display_frame] = total_display_time
+        # identify stimulus object
+        bg_stim = self.session.image_bg_stims[int(self.bg_img_sequence_df['seq_index'].loc[bg_display_frame])]
+
+        # find and fill in the binary mask
         bar_display_frame = int(trial_display_time / self.parameters['bar_refresh_time'])
+        if bar_display_frame != self.bar_display_frame:
+            self.bar_display_frame = bar_display_frame
+            self.aperture_sequence_df['empirical_time'].loc[bar_display_frame] = total_display_time
+        which_mask = np.min([self.aperture_sequence_df['seq_index'].loc[bar_display_frame], 
+                             self.session.aperture_dict[self.parameters['bar_width']][self.parameters['bar_refresh_time']][self.parameters['bar_direction']].shape[0]])
 
-        which_mask = np.min([self.parameters['bar_display_frames'][bar_display_frame], self.session.aperture_dict[self.parameters['bar_width']][self.parameters['bar_refresh_time']][self.parameters['bar_direction']].shape[0]])
-
-        mask = self.session.aperture_dict[self.parameters['bar_width']][self.parameters['bar_refresh_time']][self.parameters['bar_direction']][which_mask]
+        mask = self.session.aperture_dict[self.parameters['bar_width']][self.parameters['bar_refresh_time']][self.parameters['bar_direction']][int(which_mask)]
         bg_stim.mask = (mask * 2) - 1
         bg_stim.draw()
         
