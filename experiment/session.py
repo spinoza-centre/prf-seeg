@@ -117,6 +117,7 @@ class PRFBarPassSession(PylinkEyetrackerSession):
 
                         # save to h5file
                         ds_name = f'{bar_width}_{bar_refresh_time}_{bar_direction}'
+                        ds_name = ds_name.replace('.', 'x')
                         h5f.create_dataset(ds_name, data=these_apertures, compression=6)
 
     def create_apertures(self, n_mask_pixels, bar_direction, bar_width, nr_bar_steps):
@@ -279,6 +280,6 @@ class PRFBarPassSession(PylinkEyetrackerSession):
         h5_seq_file = os.path.join(self.output_dir, self.output_str + '_seq_timing.h5')
         for trial in self.trials:
             if type(trial) == BarPassTrial:
-                trial.bg_img_sequence_df.to_hdf(h5_seq_file, key='trial_{trial.trial_nr}/bg_imgs', mode='a')
-                trial.aperture_sequence_df.to_hdf(h5_seq_file, key='trial_{trial.trial_nr}/apertures', mode='a')                
+                trial.bg_img_sequence_df.to_hdf(h5_seq_file, key=f'trial_{str(trial.trial_nr).zfill(3)}/bg_imgs', mode='a')
+                trial.aperture_sequence_df.to_hdf(h5_seq_file, key=f'trial_{trial.trial_nr).zfill(3)}/apertures', mode='a')                
         super().close()  # close parent class!
