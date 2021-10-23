@@ -83,7 +83,7 @@ class PRFBarPassSession(PylinkEyetrackerSession):
         self.bg_images = -1 + np.array(h5stimfile.get(
             'stimuli')) / 128
         h5stimfile.close()
-        print(self.bg_images.shape)
+
         self.image_bg_stims = [GratingStim(win=self.win,
                                            tex=bg_img,
                                            units='pix', 
@@ -91,20 +91,15 @@ class PRFBarPassSession(PylinkEyetrackerSession):
                                            colorSpace='rgb',
                                            size=self.settings['stimuli'].get('stim_size_pixels'))
                                for bg_img in self.bg_images]
-        # self.image_bg_stims.extend([GratingStim(win=self.win,
-        #                                     tex=bg_img[:,::-1],
-        #                                     units='pix',
-        #                                     size=self.settings['stimuli'].get('stim_size_pixels')) for bg_img in self.bg_images])
 
-        # set up a bunch of stimulus aperture arrays
+        # set up a bunch of stimulus aperture arrays, for the combinations of 
+        # bar widths, refresh times, and directions
         nr_frames_bar_pass = int(self.settings['stimuli'].get(
             'refresh_rate') * self.settings['design'].get('bar_duration'))
         bar_directions = np.array(
             self.settings['stimuli'].get('bar_directions'))
         self.unique_bar_directions = np.unique(
             bar_directions[bar_directions >= 0])
-        # self.unique_bar_directions = self.unique_bar_directions[
-        #     self.unique_bar_directions < 180]
 
         self.aperture_dict = {}
         with h5py.File(os.path.join(self.output_dir, self.output_str + '_apertures.h5'), 'w') as h5f:
