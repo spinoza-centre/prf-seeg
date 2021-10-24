@@ -2,9 +2,9 @@
 
 This code implements a pRF experiment in python, built on top of the exptools2 package for experimentation. It is modeled after the HCP retinotopy experiment, and uses its stimulus materials for the texture in the pRF bars.The code is tested to have reasonable non-drift timing accuracy. It saves out the exact sequence of textures and bar apetures used during the experiment -- including their timing during the experiment, as well as BIDS-compliant `.tsv` event files and a timing diagnostics figure. 
 
-Here's a screenshot, linking to an example youtube movie of a single run of the experiment:
+Here's a sample, example youtube movie of a single run of the experiment is (here)[https://youtu.be/FmrIJlZ7o6c]:
 
-[![Youtube Video](https://img.youtube.com/vi/FmrIJlZ7o6c/0.jpg)](https://youtu.be/FmrIJlZ7o6c)
+https://user-images.githubusercontent.com/436593/138601665-8af3687b-334e-4240-b772-a5c9bf4e3fc9.mp4
 
 ## Running the experiment
 
