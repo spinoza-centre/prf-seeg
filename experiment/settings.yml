@@ -12,7 +12,7 @@ eyetracker:
   address: '100.1.1.1'
   dot_size: 0.1  # in deg
   options:
-    calibration_type: HV5
+    calibration_type: HV9
 
 stimuli:
   fix_radius: 8
@@ -21,21 +21,21 @@ stimuli:
   outer_fix_linewidth: 2
   stim_size_pixels: 1080 # the full height of a HD screen, likely to be used
   aperture_radius: 1 # defined in fraction of stimulus radius
-  refresh_rate: 120
+  refresh_rate: 120 # this is just a suggestion; the code doesn't depend on it
   bg_stim_h5file: 'stimuli/stims_1024.h5'
   bg_stim_url: 'https://figshare.com/ndownloader/files/31165414'
   bg_stim_refresh_time: 0.1 # in s, 20Hz
   bar_refresh_times: [0.1] # s
   bar_directions: [-1, 0, 225, -1, 90, 315, -1, 180, 45, -1, 270, 135, -1]
-  bar_widths: [0.1, 0.2, 0.3] # relative to total bg stimulus size
+  bar_widths: [0.1, 0.2, 0.3] # relative to total bg stimulus size, [0.125] would be a 'standard' Dumoulin-style pRF design
   
 design:
-  mean_ifi_duration: 2.5
-  ifi_duration_range: 1.25
-  start_duration: 6
-  end_duration: 6
-  bar_duration: 6.0
-  blank_duration: 2.0
+  mean_ifi_duration: 2.5 # fixation task timings, mean and 
+  ifi_duration_range: 1.25 # range - implemented as uniform random nrs.
+  start_duration: 6 # 24 for a standard Dumoulin-style pRF design fMRI experiment
+  end_duration: 6 # 24 for a standard Dumoulin-style pRF design fMRI experiment
+  bar_duration: 6.0 # 30 for a standard Dumoulin-style pRF design fMRI experiment
+  blank_duration: 2.0 # 16 for a standard Dumoulin-style pRF design fMRI experiment
 
 various:
   text_width: 300

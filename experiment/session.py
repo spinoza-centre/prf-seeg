@@ -121,7 +121,16 @@ class PRFBarPassSession(PylinkEyetrackerSession):
                         h5f.create_dataset(ds_name, data=these_apertures, compression=6)
 
     def create_apertures(self, n_mask_pixels, bar_direction, bar_width, nr_bar_steps):
-        """create apertures from settings.
+        """[summary]
+
+        Args:
+            n_mask_pixels ([type]): [description]
+            bar_direction ([type]): [description]
+            bar_width ([type]): [description]
+            nr_bar_steps ([type]): [description]
+
+        Returns:
+            [type]: [description]
         """
         # middle of bars
         bar_step_positions = np.linspace(-bar_width-1,
@@ -140,8 +149,6 @@ class PRFBarPassSession(PylinkEyetrackerSession):
         for i, bsp in enumerate(bar_step_positions):
             op_apertures[i] = (X > (bsp-bar_width)) & (X < (bsp+bar_width))
             op_apertures[i] *= circular_aperture
-
-        # op_apertures = (op_apertures * 2) - 1
 
         return op_apertures
 
