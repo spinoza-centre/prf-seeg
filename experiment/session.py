@@ -11,6 +11,7 @@ from psychopy import logging
 import scipy.stats as ss
 from psychopy.visual import GratingStim
 from psychopy.core import getTime
+from psychopy import parallel
 
 from exptools2.core import Session, PylinkEyetrackerSession
 from stimuli import FixationLines
@@ -46,17 +47,28 @@ class PRFBarPassSession(PylinkEyetrackerSession):
             logging.warn(f'Downloading stimulus file from figshare to {stim_file_path}')
             urllib.request.urlretrieve(self.settings['stimuli'].get('bg_stim_url'), stim_file_path)
         
+        try:
+            self.port = parallel.ParallelPort(address=0x0378)
+            self.port.setData(0)
+            self.parallel_triggering = True
+        except NotImplementedError or ImportError as error:
+            logging.warn(f'Attempted import of Parallel Port failed, {error.__class__.__name__}: {error}')
+            self.parallel_triggering = False
+            
         self.create_stimuli()
         self.create_trials()
         self.create_fixation_mark_times()
     
     def create_fixation_mark_times(self):
         # twice too many events for safety
-        nr_events = 2 * self.total_time / self.settings['design'].get('mean_ifi_duration')
-        self.fix_event_durations = np.random.rand(int(nr_events))
-        self.fix_event_durations = self.fix_event_durations * self.settings['design'].get('ifi_duration_range')
-        self.fix_event_durations = self.fix_event_durations + self.settings['design'].get('mean_ifi_duration') - self.settings['design'].get('ifi_duration_range')
+        nr_events = int(2 * self.total_time / self.settings['design'].get('minimal_ifi_duration'))
+        exponentials = np.random.exponential(self.settings['design'].get('exponential_ifi_mean'),nr_events)
+        gaussians = np.random.randn(nr_events) * self.settings['design'].get('gaussian_ifi_sd')
+        offsets = np.ones(nr_events) * self.settings['design'].get('minimal_ifi_duration')
 
+        self.fix_event_durations = exponentials + gaussians + offsets
+        self.fix_event_durations[self.fix_event_durations < offsets] = self.settings['design'].get('minimal_ifi_duration')
+        
         self.fix_event_times = np.cumsum(self.fix_event_durations) + self.settings['design'].get('start_duration')
         self.stimulus_changed = False
         self.last_fix_event = 0
@@ -290,3 +302,18 @@ class PRFBarPassSession(PylinkEyetrackerSession):
                 trial.bg_img_sequence_df.to_hdf(h5_seq_file, key=f'trial_{str(trial.trial_nr).zfill(3)}/bg_imgs', mode='a')
                 trial.aperture_sequence_df.to_hdf(h5_seq_file, key=f'trial_{str(trial.trial_nr).zfill(3)}/apertures', mode='a')                
         super().close()  # close parent class!
+
+    def parallel_trigger(self, trigger):
+        if self.parallel_triggering:
+            self.port.setData(trigger)
+            time.sleep(self.settings['design'].get('ttl_trigger_delay'))
+            self.port.setData(0)
+            time.sleep(self.settings['design'].get('ttl_trigger_delay'))
+            # P = windll.inpoutx64
+            # P.Out32(0x0378, self.settings['design'].get('ttl_trigger_blank')) # send the event code (could be 1-20)
+            # time.sleep(self.settings['design'].get('ttl_trigger_delay')) # wait for 1 ms for receiving the code
+            # P.Out32(0x0378, 0) # send a code to clear the register
+            # time.sleep(self.settings['design'].get('ttl_trigger_delay')) # wait for 1 ms"""
+        else:
+            logging.warn('Would have sent a trigger')
+

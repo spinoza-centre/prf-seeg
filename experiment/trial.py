@@ -12,13 +12,13 @@ from psychopy import logging
 
 from stimuli import FixationLines
 
-#### Windows triggering
-try:
-    from ctypes import windll
-    win_triggering = True
-except ImportError as error:
-    logging.warn(f'Attempted import of windll failed, {error.__class__.__name__}: {error}')
-    win_triggering = False
+# #### Windows triggering
+# try:
+#     from ctypes import windll
+#     win_triggering = True
+# except ImportError as error:
+#     logging.warn(f'Attempted import of windll failed, {error.__class__.__name__}: {error}')
+#     win_triggering = False
 
 class BarPassTrial(Trial):
     
@@ -64,6 +64,8 @@ class BarPassTrial(Trial):
                                             np.zeros_like(expected_bg_img_times)]).T, 
                                                 columns=['seq_index', 'expected_time', 'empirical_time'])
 
+        self.aperture_masks = self.session.aperture_dict[self.parameters['bar_width']][self.parameters['bar_refresh_time']][self.parameters['bar_direction']]
+
         self.bg_display_frame = -1
         self.bar_display_frame = -1
     
@@ -72,14 +74,7 @@ class BarPassTrial(Trial):
         #####################################################
         ## TRIGGER HERE
         #####################################################
-        if win_triggering:
-            P = windll.inpoutx64
-            P.Out32(0x0378, self.session.settings['design'].get('ttl_trigger_bar')) # send the event code (could be 1-20)
-            time.sleep(self.session.settings['design'].get('ttl_trigger_delay')) # wait for 1 ms for receiving the code
-            P.Out32(0x0378, 0) # send a code to clear the register
-            time.sleep(self.session.settings['design'].get('ttl_trigger_delay')) # wait for 1 ms"""
-        else:
-            logging.warn('Would have sent a trigger')
+        self.session.parallel_trigger(self.session.settings['design'].get('ttl_trigger_bar'))
 
         super().run()  # run parent class!
 
@@ -96,14 +91,14 @@ class BarPassTrial(Trial):
         bg_stim = self.session.image_bg_stims[int(self.bg_img_sequence_df['seq_index'].loc[bg_display_frame])]
 
         # find and fill in the binary mask
-        bar_display_frame = int(trial_display_time / self.parameters['bar_refresh_time'])
+        bar_display_frame = np.min([int(trial_display_time / self.parameters['bar_refresh_time']), self.aperture_masks.shape[0]])
         if bar_display_frame != self.bar_display_frame:
             self.bar_display_frame = bar_display_frame
             self.aperture_sequence_df['empirical_time'].loc[bar_display_frame] = total_display_time
         which_mask = np.min([self.aperture_sequence_df['seq_index'].loc[bar_display_frame], 
-                             self.session.aperture_dict[self.parameters['bar_width']][self.parameters['bar_refresh_time']][self.parameters['bar_direction']].shape[0]])
+                             self.aperture_masks.shape[0]])
 
-        mask = self.session.aperture_dict[self.parameters['bar_width']][self.parameters['bar_refresh_time']][self.parameters['bar_direction']][int(which_mask)]
+        mask = self.aperture_masks[int(which_mask)]
         bg_stim.mask = (mask * 2) - 1
         bg_stim.draw()
         
@@ -141,14 +136,7 @@ class EmptyBarPassTrial(Trial):
         #####################################################
         ## TRIGGER HERE
         #####################################################
-        if win_triggering:
-            P = windll.inpoutx64
-            P.Out32(0x0378, self.session.settings['design'].get('ttl_trigger_blank')) # send the event code (could be 1-20)
-            time.sleep(self.session.settings['design'].get('ttl_trigger_delay')) # wait for 1 ms for receiving the code
-            P.Out32(0x0378, 0) # send a code to clear the register
-            time.sleep(self.session.settings['design'].get('ttl_trigger_delay')) # wait for 1 ms"""
-        else:
-            logging.warn('Would have sent a trigger')
+        self.session.parallel_trigger(self.session.settings['design'].get('ttl_trigger_blank'))
 
         super().run()  # run parent class!
 
