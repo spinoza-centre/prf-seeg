@@ -5,6 +5,7 @@ import os
 import math
 import h5py
 import urllib
+import time
 import numpy as np
 from psychopy import logging
 import scipy.stats as ss
@@ -14,7 +15,6 @@ from psychopy.core import getTime
 from exptools2.core import Session, PylinkEyetrackerSession
 from stimuli import FixationLines
 from trial import BarPassTrial, InstructionTrial, DummyWaiterTrial, EmptyBarPassTrial, OutroTrial
-
 
 def _rotate_origin_only(x, y, radians):
     """Only rotate a point around the origin (0, 0)."""
@@ -41,7 +41,7 @@ class PRFBarPassSession(PylinkEyetrackerSession):
         super().__init__(output_str, output_dir=output_dir, settings_file=settings_file,
                          eyetracker_on=eyetracker_on)  # initialize parent class!
         # stimulus materials
-        stim_file_path = os.path.join(os.path.split(__file__)[0], self.settings['stimuli'].get('bg_stim_h5file'))
+        stim_file_path = os.path.join(os.path.split(__file__)[0], 'stimuli', self.settings['stimuli'].get('bg_stim_h5file'))
         if not os.path.isfile(stim_file_path):
             logging.warn(f'Downloading stimulus file from figshare to {stim_file_path}')
             urllib.request.urlretrieve(self.settings['stimuli'].get('bg_stim_url'), stim_file_path)
@@ -57,7 +57,7 @@ class PRFBarPassSession(PylinkEyetrackerSession):
         self.fix_event_durations = self.fix_event_durations * self.settings['design'].get('ifi_duration_range')
         self.fix_event_durations = self.fix_event_durations + self.settings['design'].get('mean_ifi_duration') - self.settings['design'].get('ifi_duration_range')
 
-        self.fix_event_times = np.cumsum(self.fix_event_durations)
+        self.fix_event_times = np.cumsum(self.fix_event_durations) + self.settings['design'].get('start_duration')
         self.stimulus_changed = False
         self.last_fix_event = 0
         np.savetxt(os.path.join(self.output_dir, self.output_str + '_fix_events.tsv'), self.fix_event_times, delimiter='\t')
@@ -79,7 +79,7 @@ class PRFBarPassSession(PylinkEyetrackerSession):
                                              **{'lineWidth':self.settings['stimuli'].get('inner_fix_linewidth')})
                                              
         h5stimfile = h5py.File(os.path.join(os.path.split(__file__)[
-                               0], self.settings['stimuli'].get('bg_stim_h5file')), 'r')
+                               0], 'stimuli', self.settings['stimuli'].get('bg_stim_h5file')), 'r')
         self.bg_images = -1 + np.array(h5stimfile.get(
             'stimuli')) / 128
         h5stimfile.close()

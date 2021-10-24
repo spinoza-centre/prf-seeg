@@ -1,13 +1,24 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
 
-import math
+import math, time
 import numpy as np
 import pandas as pd
+
 from exptools2.core import Trial
 from psychopy.core import getTime
 from psychopy.visual import TextStim
+from psychopy import logging
+
 from stimuli import FixationLines
+
+#### Windows triggering
+try:
+    from ctypes import windll
+    win_triggering = True
+except ImportError as error:
+    logging.warn(f'Attempted import of windll failed, {error.__class__.__name__}: {error}')
+    win_triggering = False
 
 class BarPassTrial(Trial):
     
@@ -61,6 +72,14 @@ class BarPassTrial(Trial):
         #####################################################
         ## TRIGGER HERE
         #####################################################
+        if win_triggering:
+            P = windll.inpoutx64
+            P.Out32(0x0378, 2) # send the event code (could be 1-20)
+            time.sleep(0.001) # wait for 1 ms for receiving the code
+            P.Out32(0x0378, 0) # send a code to clear the register
+            time.sleep(0.001) # wait for 1 ms"""
+        else:
+            logging.warn('Would have sent a trigger')
 
         super().run()  # run parent class!
 
@@ -117,9 +136,21 @@ class EmptyBarPassTrial(Trial):
         self.session.fixation.draw()
         self.session.report_fixation.draw()
 
-    # def get_events(self):
-    #     events = super().get_events()
-    #     pass
+    def run(self):
+
+        #####################################################
+        ## TRIGGER HERE
+        #####################################################
+        if win_triggering:
+            P = windll.inpoutx64
+            P.Out32(0x0378, 3) # send the event code (could be 1-20)
+            time.sleep(0.001) # wait for 1 ms for receiving the code
+            P.Out32(0x0378, 0) # send a code to clear the register
+            time.sleep(0.001) # wait for 1 ms"""
+        else:
+            logging.warn('Would have sent a trigger')
+
+        super().run()  # run parent class!
 
 class InstructionTrial(Trial):
     """ Simple trial with instruction text. """
