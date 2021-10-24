@@ -108,9 +108,17 @@ class BarPassTrial(Trial):
         self.session.fixation.draw()
         self.session.report_fixation.draw()
 
-    # def get_events(self):
-    #     events = super().get_events()
-    #     pass
+    def get_events(self):
+        events = super().get_events()
+        if len(events) > 0:
+            t = getTime() - self.session.experiment_start_time
+            # discard early events
+            if self.session.fix_event_times[0] > t:
+                pass
+            else:
+                which_last_fix_event = np.arange(self.session.fix_event_times.shape[0])[self.session.fix_event_times < t][-1]
+                self.session.fix_event_responses[which_last_fix_event][0] = t
+                self.session.fix_event_responses[which_last_fix_event][2] = t - self.session.fix_event_times[which_last_fix_event]
 
 class EmptyBarPassTrial(Trial):
     """ Simple trial with text (trial x) and fixation. """

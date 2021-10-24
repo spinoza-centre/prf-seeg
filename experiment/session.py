@@ -76,6 +76,9 @@ class PRFBarPassSession(PylinkEyetrackerSession):
         self.last_fix_event = 0
         np.savetxt(os.path.join(self.output_dir, self.output_str + '_fix_events.tsv'), self.fix_event_times, delimiter='\t')
 
+        self.fix_event_responses = np.zeros((self.fix_event_times.shape[0], 3))
+        self.fix_event_responses[:,1] = self.fix_event_times
+
     def create_stimuli(self):
         """create stimuli, both background bitmaps, and bar apertures
         """
@@ -179,10 +182,6 @@ class PRFBarPassSession(PylinkEyetrackerSession):
         """
         bar_display_frames = np.arange(
             self.aperture_dict[bar_width][bar_refresh_time][bar_direction].shape[0])
-        # nr_display_frames_bar = int(self.settings['stimuli'].get(
-        #     'refresh_rate') * self.settings['design'].get('bar_duration'))
-        # nr_frames_bar_pass = int(nr_display_frames_bar * \
-        #     self.settings['stimuli'].get('bg_stim_refresh_time'))
         nr_bg_frames_par_pass = int(self.settings['design'].get('bar_duration') / self.settings['stimuli'].get('bg_stim_refresh_time'))
             
         # the following ensures that subsequent frames of the bg do not accidentally repeat
@@ -303,6 +302,16 @@ class PRFBarPassSession(PylinkEyetrackerSession):
             if type(trial) == BarPassTrial:
                 trial.bg_img_sequence_df.to_hdf(h5_seq_file, key=f'trial_{str(trial.trial_nr).zfill(3)}/bg_imgs', mode='a')
                 trial.aperture_sequence_df.to_hdf(h5_seq_file, key=f'trial_{str(trial.trial_nr).zfill(3)}/apertures', mode='a')                
+        
+        t = getTime() - self.experiment_start_time
+        true_fix_events = self.fix_event_responses[self.fix_event_responses[:,1] < t]
+        np.savetxt(os.path.join(self.output_dir, self.output_str + '_fix_responses.tsv'), 
+                    true_fix_events, delimiter='\t')
+        responded_events = true_fix_events[:,0] != 0
+        perc_caught = responded_events.sum() / true_fix_events.shape[0]
+        mean_rt = true_fix_events[responded_events,2].mean()
+        print(f'Percentage caught: {perc_caught}, Mean Reaction Time: {mean_rt}')
+
         super().close()  # close parent class!
 
     def parallel_trigger(self, trigger):
