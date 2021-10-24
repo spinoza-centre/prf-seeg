@@ -78,7 +78,6 @@ class BarPassTrial(Trial):
 
         super().run()  # run parent class!
 
-
     def draw(self):
 
         total_display_time = (getTime() - self.session.experiment_start_time)

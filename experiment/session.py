@@ -64,9 +64,11 @@ class PRFBarPassSession(PylinkEyetrackerSession):
         nr_events = int(2 * self.total_time / self.settings['design'].get('minimal_ifi_duration'))
         exponentials = np.random.exponential(self.settings['design'].get('exponential_ifi_mean'),nr_events)
         gaussians = np.random.randn(nr_events) * self.settings['design'].get('gaussian_ifi_sd')
-        offsets = np.ones(nr_events) * self.settings['design'].get('minimal_ifi_duration')
+        offsets = np.ones(nr_events) * self.settings['design'].get('offset_ifi_duration')
+        minimum = self.settings['design'].get('minimal_ifi_duration')
 
         self.fix_event_durations = exponentials + gaussians + offsets
+        self.fix_event_durations = self.fix_event_durations[self.fix_event_durations>minimum] # shouldn't be too restrictive
         self.fix_event_durations[self.fix_event_durations < offsets] = self.settings['design'].get('minimal_ifi_duration')
         
         self.fix_event_times = np.cumsum(self.fix_event_durations) + self.settings['design'].get('start_duration')

@@ -31,9 +31,10 @@ stimuli:
   bar_widths: [0.1, 0.2, 0.3] # relative to total bg stimulus size, [0.125] would be a 'standard' Dumoulin-style pRF design
   
 design:
-  minimal_ifi_duration: 0.5
-  gaussian_ifi_sd: 0.25
-  exponential_ifi_mean: 0.75
+  offset_ifi_duration: 0.75
+  minimal_ifi_duration: 0.25
+  gaussian_ifi_sd: 0.125
+  exponential_ifi_mean: 0.625
   # mean_ifi_duration: 1.5 # fixation task timings, mean and 
   # ifi_duration_range: 1.25 # range - implemented as uniform random nrs.
   start_duration: 2.0 # 24 for a standard Dumoulin-style pRF design fMRI experiment
