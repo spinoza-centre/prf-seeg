@@ -33,7 +33,7 @@ else:
     logging.warn("Using NO eyetracker")
 
 
-output_str = f'sub-{subject}_run-{run}_task-BP'
+output_str = f'sub-{subject}_run-{str(run).zfill(2)}_task-pRF'
 settings_fn = op.join(op.dirname(__file__), 'settings.yml')
 
 session_object = PRFBarPassSession(output_str=output_str,

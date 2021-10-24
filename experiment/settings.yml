@@ -6,6 +6,7 @@ monitor:
   verbose: True
 
 window:
+  size: [1920, 1080]
   units: pix
 
 eyetracker:

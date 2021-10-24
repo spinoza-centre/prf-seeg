@@ -288,5 +288,5 @@ class PRFBarPassSession(PylinkEyetrackerSession):
         for trial in self.trials:
             if type(trial) == BarPassTrial:
                 trial.bg_img_sequence_df.to_hdf(h5_seq_file, key=f'trial_{str(trial.trial_nr).zfill(3)}/bg_imgs', mode='a')
-                trial.aperture_sequence_df.to_hdf(h5_seq_file, key=f'trial_{trial.trial_nr).zfill(3)}/apertures', mode='a')                
+                trial.aperture_sequence_df.to_hdf(h5_seq_file, key=f'trial_{str(trial.trial_nr).zfill(3)}/apertures', mode='a')                
         super().close()  # close parent class!
