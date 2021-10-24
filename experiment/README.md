@@ -4,11 +4,7 @@ This code implements a pRF experiment in python, built on top of the exptools2 p
 
 Here's a screenshot, linking to an example youtube movie of a single run of the experiment:
 
-<!-- [![Youtube Video](https://img.youtube.com/vi/FmrIJlZ7o6c/0.jpg)](https://youtu.be/FmrIJlZ7o6c) -->
-
-<iframe width="420" height="315"
-src="https://www.youtube.com/embed/FmrIJlZ7o6c">
-</iframe>
+[![Youtube Video](https://img.youtube.com/vi/FmrIJlZ7o6c/0.jpg)](https://youtu.be/FmrIJlZ7o6c)
 
 ## Running the experiment
 
@@ -26,7 +22,7 @@ conda activate exptools
 python main.py 2 1 1
 ```
 
-will run the first run of the experiment for the second subject, with eyetracking on an SR Research eyelink.
+will run the first run of the experiment for the second subject, with eyetracking on an SR Research eyelink. There's more information in the `argparse` output, and it's adaptable in `main.py`
 
 ## Customizing the experiment
 
