@@ -74,10 +74,10 @@ class BarPassTrial(Trial):
         #####################################################
         if win_triggering:
             P = windll.inpoutx64
-            P.Out32(0x0378, 2) # send the event code (could be 1-20)
-            time.sleep(0.001) # wait for 1 ms for receiving the code
+            P.Out32(0x0378, self.session.settings['design'].get('ttl_trigger_bar')) # send the event code (could be 1-20)
+            time.sleep(self.session.settings['design'].get('ttl_trigger_delay')) # wait for 1 ms for receiving the code
             P.Out32(0x0378, 0) # send a code to clear the register
-            time.sleep(0.001) # wait for 1 ms"""
+            time.sleep(self.session.settings['design'].get('ttl_trigger_delay')) # wait for 1 ms"""
         else:
             logging.warn('Would have sent a trigger')
 
@@ -143,10 +143,10 @@ class EmptyBarPassTrial(Trial):
         #####################################################
         if win_triggering:
             P = windll.inpoutx64
-            P.Out32(0x0378, 3) # send the event code (could be 1-20)
-            time.sleep(0.001) # wait for 1 ms for receiving the code
+            P.Out32(0x0378, self.session.settings['design'].get('ttl_trigger_blank')) # send the event code (could be 1-20)
+            time.sleep(self.session.settings['design'].get('ttl_trigger_delay')) # wait for 1 ms for receiving the code
             P.Out32(0x0378, 0) # send a code to clear the register
-            time.sleep(0.001) # wait for 1 ms"""
+            time.sleep(self.session.settings['design'].get('ttl_trigger_delay')) # wait for 1 ms"""
         else:
             logging.warn('Would have sent a trigger')
 

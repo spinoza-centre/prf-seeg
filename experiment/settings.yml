@@ -37,6 +37,9 @@ design:
   end_duration: 6 # 24 for a standard Dumoulin-style pRF design fMRI experiment
   bar_duration: 6.0 # 30 for a standard Dumoulin-style pRF design fMRI experiment
   blank_duration: 2.0 # 16 for a standard Dumoulin-style pRF design fMRI experiment
+  ttl_trigger_delay: 0.001 # delay after setting parallel port status for triggers
+  ttl_trigger_bar: 2 # delay after setting parallel port status for triggers
+  ttl_trigger_blank: 3 # delay after setting parallel port status for triggers
 
 various:
   text_width: 300
