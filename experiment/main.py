@@ -12,25 +12,20 @@ from psychopy import logging
 
 from session import PRFBarPassSession
 
-parser = argparse.ArgumentParser()
-parser.add_argument('subject', default=None, nargs='?')
-parser.add_argument('run', default=None, nargs='?')
-parser.add_argument('eyelink', default=False, nargs='?')
+parser = argparse.ArgumentParser(description='A Population Receptive Field experiment')
+parser.add_argument('subject', default=None, nargs='?', 
+                    help='the subject of the experiment, as a zero-filled integer, such as 001, or 04.')
+parser.add_argument('run', default=0, type=int, nargs='?', 
+                    help='the run nr of the experimental run, an integer, such as 1, or 99.')
+parser.add_argument('eyelink', default=0, type=int, nargs='?')
 
 cmd_args = parser.parse_args()
 subject, run, eyelink = cmd_args.subject, cmd_args.run, cmd_args.eyelink
 
 if subject is None:
-    subject = input('Subject? (999): ')
-    subject = 999 if subject == '' else subject
+    subject = 999
 
-if run is None:
-    run = input('Run? (None): ')
-    run = 0 if run == '' else run
-elif run == '0':
-    run = 0
-
-if eyelink:
+if eyelink == 1:
     eyetracker_on = True
     logging.warn("Using eyetracker")
 else:
