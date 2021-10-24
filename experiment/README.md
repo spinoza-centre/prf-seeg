@@ -4,8 +4,11 @@ This code implements a pRF experiment in python, built on top of the exptools2 p
 
 Here's a screenshot, linking to an example youtube movie of a single run of the experiment:
 
-[![Youtube Video](https://img.youtube.com/vi/FmrIJlZ7o6c/0.jpg)](https://youtu.be/FmrIJlZ7o6c)
+<!-- [![Youtube Video](https://img.youtube.com/vi/FmrIJlZ7o6c/0.jpg)](https://youtu.be/FmrIJlZ7o6c) -->
 
+<iframe width="420" height="315"
+src="https://www.youtube.com/embed/FmrIJlZ7o6c">
+</iframe>
 
 ## Running the experiment
 
