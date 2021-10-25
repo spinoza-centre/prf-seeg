@@ -15,7 +15,7 @@ from psychopy.core import getTime
 from psychopy import parallel
 
 from exptools2.core import Session, PylinkEyetrackerSession
-from stimuli import FixationLines
+from stimuli import FixationLines, FixationBullsEye
 from trial import BarPassTrial, InstructionTrial, DummyWaiterTrial, EmptyBarPassTrial, OutroTrial
 
 def _rotate_origin_only(x, y, radians):
@@ -86,10 +86,10 @@ class PRFBarPassSession(PylinkEyetrackerSession):
         """create stimuli, both background bitmaps, and bar apertures
         """
 
-        self.fixation = FixationLines(win=self.win,
+        self.fixation = FixationBullsEye(win=self.win,
                                       circle_radius=self.settings['stimuli'].get(
                                           'stim_size_pixels'),
-                                      color=(1, -1, -1),
+                                      color=(0.5, 0.5, 0.5, 1),
                                       **{'lineWidth':self.settings['stimuli'].get('outer_fix_linewidth')})
 
         self.report_fixation = FixationLines(win=self.win,
@@ -306,6 +306,7 @@ class PRFBarPassSession(PylinkEyetrackerSession):
                 trial.bg_img_sequence_df.to_hdf(h5_seq_file, key=f'trial_{str(trial.trial_nr).zfill(3)}/bg_imgs', mode='a')
                 trial.aperture_sequence_df.to_hdf(h5_seq_file, key=f'trial_{str(trial.trial_nr).zfill(3)}/apertures', mode='a')                
         
+        # save out and calculate first-pass behavioral results
         t = getTime() - self.experiment_start_time
         true_fix_events = self.fix_event_responses[self.fix_event_responses[:,1] < t]
         np.savetxt(os.path.join(self.output_dir, self.output_str + '_fix_responses.tsv'), 
