@@ -6,6 +6,7 @@ import math
 import h5py
 import urllib
 import time
+import pylink
 import numpy as np
 from psychopy import logging
 import scipy.stats as ss
@@ -23,7 +24,6 @@ def _rotate_origin_only(x, y, radians):
     yy = -x * math.sin(radians) + y * math.cos(radians)
 
     return xx, yy
-
 
 class PRFBarPassSession(PylinkEyetrackerSession):
     def __init__(self, output_str, output_dir, settings_file, eyetracker_on=True):
@@ -54,6 +54,9 @@ class PRFBarPassSession(PylinkEyetrackerSession):
         except NotImplementedError or ImportError as error:
             logging.warn(f'Attempted import of Parallel Port failed, {error.__class__.__name__}: {error}')
             self.parallel_triggering = False
+        
+        # set realtime mode for higher timing precision
+        pylink.beginRealTimeMode(100)
             
         self.create_stimuli()
         self.create_trials()
