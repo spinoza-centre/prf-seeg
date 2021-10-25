@@ -147,6 +147,18 @@ class EmptyBarPassTrial(Trial):
 
         super().run()  # run parent class!
 
+    def get_events(self):
+        events = super().get_events()
+        if len(events) > 0:
+            t = getTime() - self.session.experiment_start_time
+            # discard early events
+            if self.session.fix_event_times[0] > t:
+                pass
+            else:
+                which_last_fix_event = np.arange(self.session.fix_event_times.shape[0])[self.session.fix_event_times < t][-1]
+                self.session.fix_event_responses[which_last_fix_event][0] = t
+                self.session.fix_event_responses[which_last_fix_event][2] = t - self.session.fix_event_times[which_last_fix_event]
+
 class InstructionTrial(Trial):
     """ Simple trial with instruction text. """
 

@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
 
-import os.path as op
 import argparse
+import os.path as op
 from psychopy import logging
+from session import PRFBarPassSession
 
 # from psychopy import prefs
 # #change the pref libraty to PTB and set the latency mode to high precision
 # prefs.hardware['audioLib'] = 'PTB'
 # prefs.hardware['audioLatencyMode'] = 3
-
-from session import PRFBarPassSession
 
 parser = argparse.ArgumentParser(description='A Population Receptive Field experiment')
 parser.add_argument('subject', default=None, nargs='?', 
@@ -31,7 +30,6 @@ if eyelink == 1:
 else:
     eyetracker_on = False
     logging.warn("Using NO eyetracker")
-
 
 output_str = f'sub-{subject}_run-{str(run).zfill(2)}_task-pRF'
 settings_fn = op.join(op.dirname(__file__), 'settings.yml')
