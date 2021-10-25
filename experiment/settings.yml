@@ -16,14 +16,16 @@ eyetracker:
     calibration_type: HV9
 
 stimuli:
+  instruction_text: '请一直注视屏幕中央，这是最重要的'
+  pretrigger_text: '"t" 将开始实验。 报告固定十字的所有变化'
   fix_radius: 8
-  fix_color: 0.45
+  fix_color: 0.75
   inner_fix_linewidth: 4
   outer_fix_linewidth: 1
   stim_size_pixels: 1080 # the full height of a HD screen, likely to be used
   aperture_radius: 1 # defined in fraction of stimulus radius
   refresh_rate: 120 # this is just a suggestion; the code doesn't depend on it
-  bg_stim_h5file: 'stims_1024.h5'
+  bg_stim_h5file: 'stims_512.h5'
   bg_stim_url: 'https://figshare.com/ndownloader/files/31165414'
   bg_stim_refresh_time: 0.06666666666667 # in s, 15Hz
   bar_refresh_times: [0.06666666666667] # in s, should be acquisition TR for a standard stepping bar design, Dumoulin-style
@@ -31,17 +33,18 @@ stimuli:
   bar_widths: [0.1, 0.2, 0.3] # relative to total bg stimulus size, [0.125] would be a 'standard' Dumoulin-style pRF design
   
 design:
-  offset_ifi_duration: 0.75
-  minimal_ifi_duration: 0.25
+  offset_ifi_duration: 1.0
+  minimal_ifi_duration: 0.5
   gaussian_ifi_sd: 0.125
   exponential_ifi_mean: 0.625
-  start_duration: 2.0 # 24 for a standard Dumoulin-style pRF design fMRI experiment
-  end_duration: 6 # 24 for a standard Dumoulin-style pRF design fMRI experiment
+  start_duration: 1.0 # 24 for a standard Dumoulin-style pRF design fMRI experiment
+  end_duration: 1.0 # 24 for a standard Dumoulin-style pRF design fMRI experiment
   bar_duration: 6.0 # 30 for a standard Dumoulin-style pRF design fMRI experiment
   blank_duration: 2.0 # 16 for a standard Dumoulin-style pRF design fMRI experiment
-  ttl_trigger_delay: 0.001 # delay after setting parallel port status for triggers
-  ttl_trigger_bar: 2 # delay after setting parallel port status for triggers
-  ttl_trigger_blank: 3 # delay after setting parallel port status for triggers
+  ttl_trigger_delay: 0.002 # delay after setting parallel port status for triggers
+  ttl_trigger_bar: 2 # trigger code
+  ttl_trigger_blank: 3 # trigger code
+  ttl_trigger_start: 5 # trigger code
 
 various:
   text_width: 300

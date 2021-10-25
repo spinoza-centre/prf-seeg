@@ -77,7 +77,7 @@ class PRFBarPassSession(PylinkEyetrackerSession):
         self.fix_event_times = np.cumsum(self.fix_event_durations) + self.settings['design'].get('start_duration')
         self.stimulus_changed = False
         self.last_fix_event = 0
-        np.savetxt(os.path.join(self.output_dir, self.output_str + '_fix_events.tsv'), self.fix_event_times, delimiter='\t')
+        # np.savetxt(os.path.join(self.output_dir, self.output_str + '_fix_events.tsv'), self.fix_event_times, delimiter='\t')
 
         self.fix_event_responses = np.zeros((self.fix_event_times.shape[0], 3))
         self.fix_event_responses[:,1] = self.fix_event_times
@@ -201,14 +201,14 @@ class PRFBarPassSession(PylinkEyetrackerSession):
         instruction_trial = InstructionTrial(session=self,
                                              trial_nr=0,
                                              phase_durations=[np.inf],
-                                             txt=u'请一直注视屏幕中央，这是最重要的',
+                                             txt=self.settings['stimuli'].get('instruction_text'),
                                              keys=['space'])
 
         dummy_trial = DummyWaiterTrial(session=self,
                                        trial_nr=1,
                                        phase_durations=[
                                        np.inf, self.settings['design'].get('start_duration')],
-                                       txt=u'"t" 将开始实验。 报告固定十字的所有变化')
+                                       txt=self.settings['stimuli'].get('pretrigger_text'))
 
         bar_directions = np.array(
             self.settings['stimuli'].get('bar_directions'))
@@ -330,5 +330,5 @@ class PRFBarPassSession(PylinkEyetrackerSession):
             # P.Out32(0x0378, 0) # send a code to clear the register
             # time.sleep(self.settings['design'].get('ttl_trigger_delay')) # wait for 1 ms"""
         else:
-            logging.warn('Would have sent a trigger')
+            logging.warn(f'Would have sent trigger {trigger}')
 

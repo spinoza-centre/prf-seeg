@@ -233,6 +233,8 @@ class DummyWaiterTrial(InstructionTrial):
                         ## TRIGGER HERE
                         #####################################################
                         self.session.experiment_start_time = getTime()
+                        self.session.parallel_trigger(self.session.settings['design'].get('ttl_trigger_start'))
+
 
 class OutroTrial(InstructionTrial):
     """ Simple trial with only fixation cross.  """
