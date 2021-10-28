@@ -51,8 +51,8 @@ class PRFBarPassSession(PylinkEyetrackerSession):
             self.port = parallel.ParallelPort(address=0x0378)
             self.port.setData(0)
             self.parallel_triggering = True
-        except NotImplementedError or ImportError as error:
-            logging.warn(f'Attempted import of Parallel Port failed, {error.__class__.__name__}: {error}')
+        except:
+            logging.warn(f'Attempted import of Parallel Port failed')
             self.parallel_triggering = False
         
         # set realtime mode for higher timing precision
@@ -202,13 +202,15 @@ class PRFBarPassSession(PylinkEyetrackerSession):
                                              trial_nr=0,
                                              phase_durations=[np.inf],
                                              txt=self.settings['stimuli'].get('instruction_text'),
-                                             keys=['space'])
+                                             keys=['space'], 
+                                             draw_each_frame=False)
 
         dummy_trial = DummyWaiterTrial(session=self,
                                        trial_nr=1,
                                        phase_durations=[
                                        np.inf, self.settings['design'].get('start_duration')],
-                                       txt=self.settings['stimuli'].get('pretrigger_text'))
+                                       txt=self.settings['stimuli'].get('pretrigger_text'), 
+                                       draw_each_frame=False)
 
         bar_directions = np.array(
             self.settings['stimuli'].get('bar_directions'))
@@ -222,7 +224,6 @@ class PRFBarPassSession(PylinkEyetrackerSession):
                         for x in range(len(bar_refresh_times))])
         brti = np.array([np.random.choice(np.arange(len(bar_refresh_times)),len(bar_refresh_times))
                          for x in range(len(bar_widths))])
-        print(bwi, brti)
 
         self.trials = [instruction_trial, dummy_trial]
         trial_counter = 2
@@ -251,7 +252,8 @@ class PRFBarPassSession(PylinkEyetrackerSession):
                         phase_names=['stim'],
                         parameters=parameters,
                         timing='seconds',
-                        verbose=True))
+                        verbose=True, 
+                        draw_each_frame=False))
                     else:
 
                         blt = self.bar_stimulus_lookup(bar_width=bw,
@@ -266,7 +268,8 @@ class PRFBarPassSession(PylinkEyetrackerSession):
                             timing='seconds',
                             aperture_sequence=blt['bar_display_frames'],
                             bg_img_sequence=blt['bg_stim_frames'],
-                            verbose=True))
+                            verbose=True, 
+                            draw_each_frame=False))
 
                     trial_counter = trial_counter + 1
                     start_time = start_time + phase_durations[0]
@@ -275,7 +278,8 @@ class PRFBarPassSession(PylinkEyetrackerSession):
                                  trial_nr=trial_counter,
                                  phase_durations=[
                                      self.settings['design'].get('end_duration')],
-                                 txt='')
+                                 txt='', 
+                                 draw_each_frame=False)
         
         self.trials.append(outro_trial)
         self.total_time = start_time + self.settings['design'].get('end_duration')
