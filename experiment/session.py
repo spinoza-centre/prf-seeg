@@ -109,9 +109,16 @@ class PRFBarPassSession(PylinkEyetrackerSession):
                                            units='pix', 
                                            texRes=self.bg_images.shape[1],
                                            colorSpace='rgb',
-                                           size=self.settings['stimuli'].get('stim_size_pixels'))
+                                           size=self.settings['stimuli'].get('stim_size_pixels'),
+                                           interpolate=True)
                                for bg_img in self.bg_images]
 
+        # draw all the bg stimuli once, before they are used in the trials
+        for ibs in self.image_bg_stims:
+            ibs.draw()
+        self.win.flip()
+        self.win.flip()
+        
         # set up a bunch of stimulus aperture arrays, for the combinations of 
         # bar widths, refresh times, and directions
         nr_frames_bar_pass = int(self.settings['stimuli'].get(
