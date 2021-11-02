@@ -227,10 +227,11 @@ class PRFBarPassSession(PylinkEyetrackerSession):
             self.settings['stimuli'].get('bar_refresh_times'))
 
         # random ordering for bar parameters
-        bwi = np.array([np.random.choice(np.arange(len(bar_widths)),len(bar_widths))
-                        for x in range(len(bar_refresh_times))])
-        brti = np.array([np.random.choice(np.arange(len(bar_refresh_times)),len(bar_refresh_times))
-                         for x in range(len(bar_widths))])
+        bws, brts = np.meshgrid(bar_widths, bar_refresh_times)
+        bws, brts = bws.ravel(), brts.ravel()
+        bar_par_order = np.arange(bws.shape[0])
+        np.random.shuffle(bar_par_order)
+        bar_par_counter = 0
 
         self.trials = [instruction_trial, dummy_trial]
         trial_counter = 2
@@ -243,8 +244,8 @@ class PRFBarPassSession(PylinkEyetrackerSession):
                         brt = 1    
                         phase_durations = [self.settings['design'].get('blank_duration')]
                     else:
-                        bw = bar_widths[bwi[j, i]]
-                        brt = bar_refresh_times[brti[i, j]]
+                        bw = bws[bar_par_order[bar_par_counter]]
+                        brt = brts[bar_par_order[bar_par_counter]]
                         phase_durations = [self.settings['design'].get('bar_duration')]
                     parameters = {'bar_width': bw,
                                   'bar_refresh_time': brt,
@@ -280,6 +281,7 @@ class PRFBarPassSession(PylinkEyetrackerSession):
 
                     trial_counter = trial_counter + 1
                     start_time = start_time + phase_durations[0]
+                bar_par_counter = bar_par_counter + 1
 
         outro_trial = OutroTrial(session=self,
                                  trial_nr=trial_counter,
