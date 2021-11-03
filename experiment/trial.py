@@ -98,20 +98,21 @@ class BarPassTrial(Trial):
             draw = True
 
         if draw:
-            # identify stimulus object
-            which_bg_stim = self.session.image_bg_stims[int(self.bg_img_sequence_df['seq_index'].loc[bg_display_frame])]
-
-            which_mask = np.min([self.aperture_sequence_df['seq_index'].loc[bar_display_frame], 
-                                self.aperture_masks.shape[0]])
-
-            mask = self.aperture_masks[int(which_mask)]
-            which_bg_stim.mask = (mask * 2) - 1
-            which_bg_stim.draw()
-            
             if total_display_time > self.session.fix_event_times[self.session.last_fix_event]:
                 self.session.last_fix_event = self.session.last_fix_event + 1
                 self.session.report_fixation.setColor(-1 * self.session.report_fixation.color)
 
+            # identify stimulus object, and decide whether to draw
+            if math.fmod(trial_display_time, self.parameters['bar_blank_interval']) > self.parameters['bar_blank_duration']:
+                which_bg_stim = self.session.image_bg_stims[int(self.bg_img_sequence_df['seq_index'].loc[bg_display_frame])]
+
+                which_mask = np.min([self.aperture_sequence_df['seq_index'].loc[bar_display_frame], 
+                                    self.aperture_masks.shape[0]])
+
+                mask = self.aperture_masks[int(which_mask)]
+                which_bg_stim.mask = (mask * 2) - 1
+                which_bg_stim.draw()
+            
             self.session.fixation.draw()
             self.session.report_fixation.draw()
             self.session.win.flip()

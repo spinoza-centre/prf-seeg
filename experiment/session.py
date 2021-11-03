@@ -64,7 +64,7 @@ class PRFBarPassSession(PylinkEyetrackerSession):
     
     def create_fixation_mark_times(self):
         # twice too many events for safety
-        nr_events = int(2 * self.total_time / self.settings['design'].get('minimal_ifi_duration'))
+        nr_events = int(6 * self.total_time / self.settings['design'].get('minimal_ifi_duration'))
         exponentials = np.random.exponential(self.settings['design'].get('exponential_ifi_mean'),nr_events)
         gaussians = np.random.randn(nr_events) * self.settings['design'].get('gaussian_ifi_sd')
         offsets = np.ones(nr_events) * self.settings['design'].get('offset_ifi_duration')
@@ -116,6 +116,8 @@ class PRFBarPassSession(PylinkEyetrackerSession):
         # draw all the bg stimuli once, before they are used in the trials
         for ibs in self.image_bg_stims:
             ibs.draw()
+        intromask = GratingStim(self.win, tex=np.ones((4,4)), contrast=1, color=(0.0, 0.0, 0.0), size=self.settings['stimuli'].get('stim_size_pixels'))
+        intromask.draw()
         self.win.flip()
         self.win.flip()
         
@@ -251,6 +253,8 @@ class PRFBarPassSession(PylinkEyetrackerSession):
                                   'bar_refresh_time': brt,
                                   'bar_direction': bd,
                                   'start_time': start_time,
+                                  'bar_blank_duration': self.settings['stimuli'].get('bar_blank_duration'),
+                                  'bar_blank_interval': self.settings['stimuli'].get('bar_blank_interval'),
                                   'bg_stim_refresh_time': self.settings['stimuli'].get('bg_stim_refresh_time')}
                     if bd == -1:                        
                         self.trials.append(EmptyBarPassTrial(
