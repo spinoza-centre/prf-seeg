@@ -1,0 +1,4 @@
+preprocessing:
+  downsample_frequency: 900
+  notch-frequencies: [50,100,150,200]
+  tfr_subsampling_factor: 60
