@@ -5,9 +5,17 @@ import pandas as pd
 
 
 class Patient:
-
+    """Patient is a single patient, with electrodes in fixed positions, containing multiple runs of sEEG data as well as pre-op T1w and post-op CT anatomical images
+    """    
     # instance attributes
     def __init__(self, subject, raw_dir, derivatives_dir):
+        """[summary]
+
+        Args:
+            subject ([type]): [description]
+            raw_dir ([type]): [description]
+            derivatives_dir ([type]): [description]
+        """        
        self.subject = subject
        self.raw_func_dir = os.path.join(raw_dir, self.subject, 'func')
        self.raw_anat_dir = os.path.join(raw_dir, self.subject, 'anat')
@@ -32,7 +40,19 @@ class Patient:
         pass
 
 class Acquisition:
+    """Acquisition is a single sEEG run, with associated metadata. 
+    It is the vehicle for preprocessing.
+    """    
     def __init__(self, raw_dir, run_nr, acq, patient, task='pRF'):
+        """[summary]
+
+        Args:
+            raw_dir ([type]): [description]
+            run_nr ([type]): [description]
+            acq ([type]): [description]
+            patient ([type]): [description]
+            task (str, optional): [description]. Defaults to 'pRF'.
+        """        
         self.raw_dir = raw_dir
         self.run_nr = run_nr
         self.acq = acq
@@ -50,6 +70,8 @@ class Acquisition:
         self.raw = mne.io.read_raw_edf(self.raw_file)
     
     def internalize_metadata(self):
+        """internalize_metadata reads in the metadata from various file formats associated with this run.
+        """        
         # expt yaml file
         with open(self.exp_yml_file, 'r') as file:
             self.experiment_settings = yaml.safe_load(file)
@@ -60,6 +82,15 @@ class Acquisition:
         self.aperture_timing = self._read_expt_h5(self.aperture_h5_file, 'apertures')
         
     def _read_expt_h5(self, h5file, folder):
+        """_read_expt_h5 reads the hdf5 files which are in standardized format.
+
+        Args:
+            h5file ([type]): [description]
+            folder ([type]): [description]
+
+        Returns:
+            [type]: [description]
+        """        
         # get items from h5 file
         with h5py.File(h5file, 'r') as f:
             ks = list(f.keys())
@@ -79,6 +110,12 @@ class Acquisition:
     def tfr(self, 
             resample_frequency=1000, 
             notch_filter_frequencies=[50,100,150,200,250]):
+        """[summary]
+
+        Args:
+            resample_frequency (int, optional): [description]. Defaults to 1000.
+            notch_filter_frequencies (list, optional): [description]. Defaults to [50,100,150,200,250].
+        """            
         # 1. resample
         # 2. notch filter
         # 3. t0 at 't' press
@@ -86,6 +123,11 @@ class Acquisition:
         return    
 
     def split_to_pRF_runs(self, stage='tfr'):
+        """[summary]
+
+        Args:
+            stage (str, optional): [description]. Defaults to 'tfr'.
+        """        
         # 1. find triggers
         # 2. find parameters for each pRF run
         # 3. 
