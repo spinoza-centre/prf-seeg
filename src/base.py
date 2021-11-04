@@ -27,7 +27,8 @@ class Patient:
         # 1. check if freesurfer has run
         # 2. run MNE coregistration 
         # 3. save electrode positions in stereotypical format
-
+        # follow: https://mne.tools/stable/auto_tutorials/clinical/10_ieeg_localize.html#sphx-glr-auto-tutorials-clinical-10-ieeg-localize-py
+        # and: https://mne.tools/stable/auto_tutorials/clinical/20_seeg.html
         pass
 
 class Acquisition:
