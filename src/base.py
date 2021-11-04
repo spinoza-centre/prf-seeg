@@ -12,7 +12,7 @@ class Patient:
        self.raw_func_dir = os.path.join(raw_dir, self.subject, 'func')
        self.raw_anat_dir = os.path.join(raw_dir, self.subject, 'anat')
 
-# instance method
+    # instance method
     def gather_raw_files(self, raw_dir):
        return
 
@@ -65,23 +65,26 @@ class Acquisition:
 
         return {k: pd.read_hdf(h5file, key=f'{k}/{folder}', mode='r') for k in ks}
 
-        
 
-    def resample_and_notch(self, resample_frequency=1000, notch_filter_frequencies=[50,100,150,200,250]):
+    def resample_and_notch(self, 
+                           resample_frequency=1000, 
+                           notch_filter_frequencies=[50,100,150,200,250]):
         # 1. resample
         # 2. notch filter
         # 3. t0 at 't' press
         # 4. tfr from t0 to end of last bar pass
         return
 
-    def tfr(self, resample_frequency=1000, notch_filter_frequencies=[50,100,150,200,250]):
+    def tfr(self, 
+            resample_frequency=1000, 
+            notch_filter_frequencies=[50,100,150,200,250]):
         # 1. resample
         # 2. notch filter
         # 3. t0 at 't' press
         # 4. tfr from t0 to end of last bar pass
         return    
 
-    def split_to_pRF_runs(self):
+    def split_to_pRF_runs(self, stage='tfr'):
         # 1. find triggers
         # 2. find parameters for each pRF run
         # 3. 
@@ -93,6 +96,7 @@ class Acquisition2kHz(Acquisition):
        print('Acquisition2kHz is ready')
 
     def preprocess(self):
+        pass
 
 class Acquisition10kHz(Acquisition):
     def __init__(self, raw_dir, run_nr, patient, task='pRF'):
