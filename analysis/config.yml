@@ -2,3 +2,6 @@ preprocessing:
   downsample_frequency: 900
   notch-frequencies: [50,100,150,200]
   tfr_subsampling_factor: 60
+  tfr_logspace_low: 0.3010299956639812
+  tfr_logspace_high: 2.4771212547196626
+  tfr_logspace_low: 200
