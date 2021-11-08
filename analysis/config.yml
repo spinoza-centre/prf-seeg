@@ -4,4 +4,10 @@ preprocessing:
   tfr_subsampling_factor: 60
   tfr_logspace_low: 0.3010299956639812
   tfr_logspace_high: 2.4771212547196626
-  tfr_logspace_low: 200
+  tfr_logspace_nr: 200
+
+trigger_channels: 'DC'
+non_data_channels: ['ECG', 'DELT', 'EEG']
+task: 'pRF'
+acquisition_types: ['10kHz', '10kHz', '2kHz', '2kHz', '2kHz', '2kHz']
+nr_runs: 6

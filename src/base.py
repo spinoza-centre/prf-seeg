@@ -8,7 +8,8 @@ import pandas as pd
 
 
 class Patient:
-    """Patient is a single patient, with electrodes in fixed positions, containing multiple runs of sEEG data as well as pre-op T1w and post-op CT anatomical images
+    """Patient is a single patient, with electrodes in fixed positions, 
+    containing multiple runs of sEEG data as well as pre-op T1w and post-op CT anatomical images
     """
     # instance attributes
 
@@ -21,22 +22,47 @@ class Patient:
             derivatives_dir ([type]): [description]
         """
         self.subject = subject
+        self.raw_dir = raw_dir
+        self.derivatives_dir = self.derivatives_dir
+
         self.raw_func_dir = os.path.join(raw_dir, self.subject, 'func')
         self.raw_anat_dir = os.path.join(raw_dir, self.subject, 'anat')
 
+        self.preprocessing_dir = os.path.join(derivatives_dir, 'prep', self.subject, 'func')
+        self.localization_dir = os.path.join(derivatives_dir, 'prep', self.subject, 'loc')
+        self.tfr_dir = os.path.join(derivatives_dir, 'tfr', self.subject)
+        self.prf_dir = os.path.join(derivatives_dir, 'pRF', self.subject)
+
+        for d in (self.preprocessing_dir, self.localization_dir, self.tfr_dir, self.prf_dir):
+            os.makedirs(d, exist_ok=True)
         with os.path.join(os.path.split(os.path.split(__file__)[0])[0], 'analysis', 'config.yml') as file:
             self.analysis_settings = yaml.safe_load(file)
 
     # instance method
-    def gather_raw_files(self, raw_dir):
-        return
+    def gather_acquisitions(self):
+        self.acquisitions = []
+        for run, acq in zip(range(1, self.analysis_settings['nr_runs']+1), self.analysis_settings['acquisition_types']):
+            if acq == '2kHz:
+                this_run = Acquisition2kHz(raw_dir=self.raw_func_dir, 
+                                            run_nr=run, 
+                                            acq=acq, 
+                                            patient=self, 
+                                            task=self.analysis_settings['task'])
+            elif acq == '10kHz':
+                this_run = Acquisition10kHz(raw_dir=self.raw_func_dir, 
+                                            run_nr=run, 
+                                            acq=acq, 
+                                            patient=self, 
+                                            task=self.analysis_settings['task'])
+            self.acquisitions.append(this_run)
+            
 
-    def preprocess(self, raw_dir):
+    def preprocess(self):
         # 1. resample
         # 2. notch filter
         # 3. t0 at 't' press
         # 4. tfr from t0 to end of last bar pass
-        return
+        pass
 
     def find_electrode_positions(args):
         # 1. check if freesurfer has run
@@ -187,41 +213,66 @@ class Acquisition:
         # 1. notch filter
         # 2. resample
         # 3. t0 at 't' press
-        # 4. tfr from t0 to end of last bar pass
         self.raw.load_data()
         self.raw.notch_filter(notch_filter_frequencies, picks=self.non_signal_channels)
         self.raw.resample(resample_frequency, stim_picks=self.trigger_channels)
 
-        self.identify_triggers()
-        self.sync_eeg_behavior()
-
-        first_sample = self.trial_data.eeg_tt.iloc[0]
-        last_sample = self.trial_data.eeg_tt.iloc[-1] \
-            + self.experiment_settings['design']['blank_duration'] * resample_frequency
         if output_file_name != None:
+            # now, we need to cut the data up for saving:
+            self.identify_triggers()
+            self.sync_eeg_behavior()
+
+            first_sample = self.trial_data.eeg_tt.iloc[0]
+            last_sample = self.trial_data.eeg_tt.iloc[-1] \
+                + self.experiment_settings['design']['blank_duration'] * resample_frequency
+                
             self.raw.save(fname=output_file_name,
                           tmin=first_sample,
                           tmax=last_sample)
         
+    def _get_data_channels(self, 
+            raw_file_name=None):
+        if self.raw == None:
+            self._read_raw(raw_file_name)
+
+        dc_channels_indx = np.array([True if 'DC' in ch else False for ch in self.raw.ch_names])
+        dc_channels = np.array(self.raw.ch_names)[np.array(dc_channels_indx)]
+
+        self.data_channel_bools = np.array([np.array([False if ndc in rcn else True 
+                                                for ndc in self.analysis_settings['non_data_channels']]).prod(dtype=bool) 
+                                                    for rcn in self.raw.ch_names])
+        self.data_channel_names = np.array(self.raw.ch_names)[self.data_channel_bools]
 
     def tfr(self, 
-            sample_frequency=1000, 
-            tfr_frequencies=[]):
-        """[summary]
+            raw_file_name=None, 
+            tfr_logspace_low=0.1,
+            tfr_logspace_high=2.5,
+            tfr_logspace_nr=200,
+            tfr_subsampling_factor=5,
+            output_filename=None):
+        if self.raw == None:
+            self._read_raw(raw_file_name)
 
-        Args:
-            resample_frequency (int, optional): [description]. Defaults to 1000.
-            notch_filter_frequencies (list, optional): [description]. Defaults to [50,100,150,200,250].
-        """            
-        # 1. resample
-        # 2. notch filter
-        # 3. t0 at 't' press
-        # 4. tfr from t0 to end of last bar pass
+        self._get_data_channels()
+        # assumes that input data are t0 to end of last bar pass blank
+        raw_data_np = self.raw.get_data(picks=self.data_channel_names, 
+                                        start=0)
 
-        tfr_array_multitaper(raw_data_np[np.newaxis, ...], sfreq=sample_frequency, freqs=freqs, n_jobs=4, decim=5, output='power')
+        freqs = np.logspace(tfr_logspace_low, tfr_logspace_high, tfr_logspace_nr)
+        tfr_data = tfr_array_multitaper(raw_data_np[np.newaxis, ...], 
+                            sfreq=self.raw.info['sfreq'], 
+                            freqs=freqs, 
+                            n_jobs=-1, 
+                            decim=tfr_subsampling_factor, 
+                            output='power')
 
-
-        return    
+        if output_filename != None:
+            with h5py.File(output_filename, 'a') as h5f:
+                h5f.create_dataset('ch_names', data=self.data_channel_names, compression=6)
+                h5f.create_dataset('freqs', data=freqs, compression=6)
+                h5f.create_dataset('np_data', data=raw_data_np, compression=6)
+                h5f.create_dataset('tfr_data', data=tfr_data, compression=6)
+            
 
     def split_to_pRF_runs(self, stage='tfr'):
         """[summary]
