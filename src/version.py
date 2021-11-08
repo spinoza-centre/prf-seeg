@@ -25,7 +25,7 @@ CLASSIFIERS = ["Development Status :: 3 - Alpha",
                "Topic :: Scientific/Engineering"]
 
 # Description should be a one-liner:
-description = "prf-seeg: Intracranial EEG pRF experiment."
+description = "prf-seeg - Intracranial EEG pRF experiment."
 # Long description will go up on the pypi page
 long_description = """
 Structure loosely based on Shablona by Ariel Rokem: https://github.com/uwescience/shablona
@@ -49,3 +49,4 @@ VERSION = __version__
 PACKAGE_DATA = {'prfseeg': [pjoin('notebooks', '*')]}
 REQUIRES = ["numpy", "scipy", "nibabel", "nilearn", "h5py", "pyyaml", "pandas", 'mne']
 DEP_LINKS = []
+PYTHON_REQUIRES = ">= 3.9"

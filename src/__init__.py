@@ -1,2 +1,2 @@
-from .patient import *
-from .acquisition import *
+from patient import *
+from acquisition import *
