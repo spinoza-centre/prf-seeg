@@ -4,6 +4,8 @@ import yaml, json, h5py
 import numpy as np
 import scipy as sp
 import pandas as pd
+import matplotlib.pyplot as plt
+from mne.time_frequency import tfr_array_multitaper
 
 class Acquisition:
     """Acquisition is a single sEEG run, with associated metadata. 
@@ -125,7 +127,7 @@ class Acquisition:
 
         self.bar_onset_indx = np.setdiff1d(self.bar_onset_indx, self.blank_onset_indx)
 
-    def _timings_from_trig_channel(trig_channel_data, ll=4.0):
+    def _timings_from_trig_channel(self, trig_channel_data, ll=4.0):
         """_timings_from_trig_channel takes a trigger channel's recording and finds the onset times and indices
 
         Args:
@@ -136,7 +138,9 @@ class Acquisition:
         Returns:
             (onsets, onset_indx) tuple: onsets in the timeframe of the channel's samples, and their integer indices. 
         """        
-        baseline, spread = np.median(trig_channel_data), np.std(trig_channel_data)
+        spread = np.std(trig_channel_data)
+        spread = np.std(trig_channel_data)
+        baseline = np.median(trig_channel_data)
         onsets = np.r_[np.diff(trig_channel_data > baseline+ll*spread)>0, False]
         onset_indx = np.arange(trig_channel_data.shape[0])[onsets]
         return onsets, onset_indx
@@ -153,7 +157,7 @@ class Acquisition:
         tdf.reset_index(inplace=True)
         tdf.drop(0, inplace=True)
         tdf.reset_index(inplace=True)
-        tdf.reindex(index=np.arange(trial_data.shape[0]))
+        tdf.reindex(index=np.arange(self.tsv_trial_data.shape[0]))
 
         # Now we can use the info in self.trial_data
         self.trial_data = pd.concat((self.tsv_trial_data, tdf[['eeg_tt', 'category']]), axis=1)
@@ -175,16 +179,21 @@ class Acquisition:
 
         if output_file_name != None:
             # now, we need to cut the data up for saving:
+            self.internalize_metadata()
             self.identify_triggers()
             self.sync_eeg_behavior()
 
-            first_sample = self.trial_data.eeg_tt.iloc[0]
+            first_sample = self.trial_data.eeg_tt.iloc[0] 
             last_sample = self.trial_data.eeg_tt.iloc[-1] \
-                + self.experiment_settings['design']['blank_duration'] * resample_frequency
-                
+                + (self.experiment_settings['design']['blank_duration'] * resample_frequency) / self.raw.info['sfreq']
+            
+            # convert from index to time
+            first_time = first_sample / self.raw.info['sfreq']
+            last_time = last_sample / self.raw.info['sfreq']
+
             self.raw.save(fname=output_file_name,
-                          tmin=first_sample,
-                          tmax=last_sample)
+                          tmin=first_time,
+                          tmax=last_time)
         
     def _get_data_channels(self, 
             raw_file_name=None):

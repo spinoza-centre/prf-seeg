@@ -65,14 +65,14 @@ class Patient:
         # 3. t0 at 't' press
         # 4. tfr from t0 to end of last bar pass
         for acq in self.acquisitions:
-            preprocessed_fn = acq.raw_filename.replace('bids', 'derivatives/preprocessing').replace('.edf', '.fif')
+            preprocessed_fn = acq.raw_filename.replace('bids', 'derivatives/prep').replace('.edf', '_ieeg.fif.gz')
             acq.notch_resample_cut(
                             resample_frequency=self.analysis_settings['preprocessing']['downsample_frequency'], 
                             notch_filter_frequencies=self.analysis_settings['preprocessing']['notch_frequencies'], 
                             raw_file_name=None,
                             output_file_name=preprocessed_fn)
             acq.preprocessed_fn = preprocessed_fn
-            tfr_fn = preprocessed_fn.replace('preprocessing', 'tfr').replace('.fif', '.h5')
+            tfr_fn = preprocessed_fn.replace('prep', 'tfr').replace('.fif.gz', '.h5')
             acq.tfr(raw_file_name=acq.preprocessed_fn, 
                     tfr_logspace_low=self.analysis_settings['preprocessing']['tfr_logspace_low'],
                     tfr_logspace_high=self.analysis_settings['preprocessing']['tfr_logspace_high'],
