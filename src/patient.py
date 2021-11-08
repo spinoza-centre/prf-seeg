@@ -6,6 +6,8 @@ import numpy as np
 import scipy as sp
 import pandas as pd
 
+from acquisition import Acquisition2kHz, Acquisition10kHz
+
 class Patient:
     """Patient is a single patient, with electrodes in fixed positions, 
     containing multiple runs of sEEG data as well as pre-op T1w and post-op CT anatomical images
