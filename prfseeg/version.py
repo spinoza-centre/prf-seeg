@@ -46,6 +46,7 @@ MAJOR = _version_major
 MINOR = _version_minor
 MICRO = _version_micro
 VERSION = __version__
+PACKAGE_DIR = {"": "prfseeg"}
 PACKAGE_DATA = {'prfseeg': [pjoin('notebooks', '*')]}
 REQUIRES = ["numpy", "scipy", "nibabel", "nilearn", "h5py", "pyyaml", "pandas", 'mne']
 DEP_LINKS = []
