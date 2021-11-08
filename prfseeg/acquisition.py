@@ -1,12 +1,9 @@
 import os
 import mne
-import yaml
-import json
+import yaml, json, h5py
 import numpy as np
 import scipy as sp
 import pandas as pd
-
-from patient import Patient
 
 class Acquisition:
     """Acquisition is a single sEEG run, with associated metadata. 
@@ -28,13 +25,13 @@ class Acquisition:
         self.patient = patient
         self.task = task
 
-        self.raw_filename = os.path.join(self.raw_dir, self.patient.subject, 'func', f'{self.patient.subject}_run-{str(self.run_nr).zfill(2)}_task-{self.task}_acq-{self.acq}.edf')
+        self.raw_filename = os.path.join(self.raw_dir, f'{self.patient.subject}_run-{str(self.run_nr).zfill(2)}_task-{self.task}_acq-{self.acq}.edf')
 
-        self.evt_tsv_file = os.path.join(self.raw_dir, self.patient.subject, 'func', f'{self.patient.subject}_run-{str(self.run_nr).zfill(2)}_task-{self.task}_events.tsv')
-        self.fix_tsv_file = os.path.join(self.raw_dir, self.patient.subject, 'func', f'{self.patient.subject}_run-{str(self.run_nr).zfill(2)}_task-{self.task}_fix_responses.tsv')
-        self.exp_yml_file = os.path.join(self.raw_dir, self.patient.subject, 'func', f'{self.patient.subject}_run-{str(self.run_nr).zfill(2)}_task-{self.task}_expsettings.yml')
-        self.seq_timing_h5_file = os.path.join(self.raw_dir, self.patient.subject, 'func', f'{self.patient.subject}_run-{str(self.run_nr).zfill(2)}_task-{self.task}_seq_timing.h5')
-        self.aperture_h5_file = os.path.join(self.raw_dir, self.patient.subject, 'func', f'{self.patient.subject}_run-{str(self.run_nr).zfill(2)}_task-{self.task}_apertures.h5')
+        self.evt_tsv_file = os.path.join(self.raw_dir, f'{self.patient.subject}_run-{str(self.run_nr).zfill(2)}_task-{self.task}_events.tsv')
+        self.fix_tsv_file = os.path.join(self.raw_dir, f'{self.patient.subject}_run-{str(self.run_nr).zfill(2)}_task-{self.task}_fix_responses.tsv')
+        self.exp_yml_file = os.path.join(self.raw_dir, f'{self.patient.subject}_run-{str(self.run_nr).zfill(2)}_task-{self.task}_expsettings.yml')
+        self.seq_timing_h5_file = os.path.join(self.raw_dir, f'{self.patient.subject}_run-{str(self.run_nr).zfill(2)}_task-{self.task}_seq_timing.h5')
+        self.aperture_h5_file = os.path.join(self.raw_dir, f'{self.patient.subject}_run-{str(self.run_nr).zfill(2)}_task-{self.task}_apertures.h5')
 
         self.raw = None
 
@@ -57,10 +54,10 @@ class Acquisition:
         # expt yaml file
         with open(self.exp_yml_file, 'r') as file:
             self.experiment_settings = yaml.safe_load(file)
-        self.raw_fixation_events = pd.DataFrame(np.loadtxt(self.fix_tsv_file, sep='\t'), columns=['time_since_t', 'fix_event_times', 'initial_reaction_time'])
+        self.raw_fixation_events = pd.DataFrame(np.loadtxt(self.fix_tsv_file, delimiter='\t'), columns=['time_since_t', 'fix_event_times', 'initial_reaction_time'])
         # read seq timings and aperture/bg stim data from h5 files.
-        self.bg_img_timing = self._read_expt_h5(self.seq_timing_h5_file, 'bg_imgs')
-        self.aperture_timing = self._read_expt_h5(self.aperture_h5_file, 'apertures')
+        self.bg_img_timing = self._read_bg_imgs_h5(self.seq_timing_h5_file, 'bg_imgs')
+        self.aperture_timing = self._read_apertures_h5(self.aperture_h5_file, 'apertures')
 
         # events from the experimental .tsv file.
         evt_data = pd.read_csv(self.evt_tsv_file, sep='\t')
@@ -71,8 +68,8 @@ class Acquisition:
         self.tsv_trial_data.reindex(index=np.arange(self.tsv_trial_data.shape[0]))
         self.tsv_trial_data.reset_index(inplace=True)
         
-    def _read_expt_h5(self, h5file, folder):
-        """_read_expt_h5 reads the hdf5 files which are in standardized format.
+    def _read_bg_imgs_h5(self, h5file, folder):
+        """_read_bg_imgs_h5 reads the hdf5 files which are in standardized format.
 
         Args:
             h5file (str, path): the source hdf5 file.
@@ -85,13 +82,35 @@ class Acquisition:
         with h5py.File(h5file, 'r') as f:
             ks = list(f.keys())
 
-        return {k: pd.read_hdf(h5file, key=f'{k}/{folder}', mode='r') for k in ks}
+        ops = {}
+        for k in ks:
+            try:
+                ops.update({k: pd.read_hdf(h5file, key=f"{k.replace('.','x')}/{folder}", mode='r') })
+            except KeyError as err:
+                print(err)
+        return ops
+
+    def _read_apertures_h5(self, h5file, folder):
+        """_read_apertures_h5 reads the hdf5 files which are in standardized format.
+
+        Args:
+            h5file (str, path): the source hdf5 file.
+            folder (str): name of the folder/array in which the data are stored.
+
+        Returns:
+            dictionary: dictionary, keys: trials, values: pandas DataFrames
+        """        
+        # get items from h5 file
+        with h5py.File(h5file, 'r') as f:
+            ks = list(f.keys())
+            ops = {k: np.array(f.get(k.replace('.','x')), dtype=bool) for k in ks}
+        return ops
 
     def identify_triggers(self, raw_file_name=None):
         if self.raw == None:
             self._read_raw(raw_file_name)
 
-        dc_channels_indx = np.array([True if 'DC' in ch else False for ch in self.raw.ch_names])
+        dc_channels_indx = np.array([True if self.patient.analysis_settings['trigger_channels'] in ch else False for ch in self.raw.ch_names])
         dc_channels = np.array(self.raw.ch_names)[np.array(dc_channels_indx)]
 
         dc_data = self.raw.get_data(picks=dc_channels)
@@ -149,8 +168,9 @@ class Acquisition:
         # 1. notch filter
         # 2. resample
         # 3. t0 at 't' press
+        self._get_data_channels()
         self.raw.load_data()
-        self.raw.notch_filter(notch_filter_frequencies, picks=self.non_signal_channels)
+        self.raw.notch_filter(notch_filter_frequencies, picks=self.signal_channels)
         self.raw.resample(resample_frequency, stim_picks=self.trigger_channels)
 
         if output_file_name != None:
@@ -172,12 +192,14 @@ class Acquisition:
             self._read_raw(raw_file_name)
 
         dc_channels_indx = np.array([True if 'DC' in ch else False for ch in self.raw.ch_names])
-        dc_channels = np.array(self.raw.ch_names)[np.array(dc_channels_indx)]
+        self.dc_channel_names = np.array(self.raw.ch_names)[np.array(dc_channels_indx)]
 
         self.data_channel_bools = np.array([np.array([False if ndc in rcn else True 
-                                                for ndc in self.analysis_settings['non_data_channels']]).prod(dtype=bool) 
+                                                for ndc in self.patient.analysis_settings['non_data_channels']]).prod(dtype=bool) 
                                                     for rcn in self.raw.ch_names])
         self.data_channel_names = np.array(self.raw.ch_names)[self.data_channel_bools]
+        self.signal_channels = np.arange(len(self.data_channel_bools))[self.data_channel_bools]
+        self.trigger_channels = np.arange(len(self.raw.ch_names))[dc_channels_indx]
 
     def tfr(self, 
             raw_file_name=None, 
@@ -223,16 +245,13 @@ class Acquisition:
 class Acquisition2kHz(Acquisition):
     def __init__(self, raw_dir, run_nr, patient, task='pRF'):
        # call super() function
-       super().__init__(raw_dir, run_nr, acq='2kHz', patient, task='pRF')
+       super().__init__(raw_dir, run_nr, acq='2kHz', patient=patient, task='pRF')
        print('Acquisition2kHz is ready')
-
-    def preprocess(self):
-        pass
 
 class Acquisition10kHz(Acquisition):
     def __init__(self, raw_dir, run_nr, patient, task='pRF'):
        # call super() function
-       super().__init__(raw_dir, run_nr, acq='10kHz', patient, task='pRF')
+       super().__init__(raw_dir, run_nr, acq='10kHz', patient=patient, task='pRF')
        print('Acquisition10kHz is ready')
 
 class PRF_run:

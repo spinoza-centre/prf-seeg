@@ -1,6 +1,6 @@
 import os, sys
 from setuptools import setup, find_packages
-PACKAGES = find_packages(where='prfseeg')
+PACKAGES = find_packages()
 
 # Get version and release info, which is all stored in src/version.py
 ver_file = os.path.join('prfseeg', 'version.py')
@@ -10,9 +10,9 @@ with open(ver_file) as f:
 # Give setuptools a hint to complain if it's too old a version
 # 24.2.0 added the python_requires option
 # Should match pyproject.toml
-SETUP_REQUIRES = ['setuptools >= 24.2.0']
+# SETUP_REQUIRES = ['setuptools >= 24.2.0']
 # This enables setuptools to install wheel on-the-fly
-SETUP_REQUIRES += ['wheel'] if 'bdist_wheel' in sys.argv else []
+# SETUP_REQUIRES += ['wheel'] if 'bdist_wheel' in sys.argv else []
 
 opts = dict(name=NAME,
             maintainer=MAINTAINER,
@@ -28,11 +28,12 @@ opts = dict(name=NAME,
             platforms=PLATFORMS,
             version=VERSION,
             packages=PACKAGES,
-            package_dir=PACKAGE_DIR,
+            # package_dir=PACKAGE_DIR,
             package_data=PACKAGE_DATA,
             install_requires=REQUIRES,
+            py_modules=PY_MODULES,
             python_requires=PYTHON_REQUIRES,
-            setup_requires=SETUP_REQUIRES,
+            # setup_requires=SETUP_REQUIRES,
             requires=REQUIRES)
 
 
