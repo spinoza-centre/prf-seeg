@@ -174,6 +174,8 @@ class Acquisition:
         # 3. t0 at 't' press
         self._get_data_channels()
         self.raw.load_data()
+        mne.set_eeg_reference(self.raw, verbose=True)
+
         self.raw.notch_filter(notch_filter_frequencies, picks=self.signal_channels)
         self.raw.resample(resample_frequency, stim_picks=self.trigger_channels)
 
@@ -193,7 +195,8 @@ class Acquisition:
 
             self.raw.save(fname=output_file_name,
                           tmin=first_time,
-                          tmax=last_time)
+                          tmax=last_time,
+                          overwrite=True)
         
     def _get_data_channels(self, 
             raw_file_name=None):
@@ -229,16 +232,18 @@ class Acquisition:
         tfr_data = tfr_array_multitaper(raw_data_np[np.newaxis, ...], 
                             sfreq=self.raw.info['sfreq'], 
                             freqs=freqs, 
-                            n_jobs=-1, 
+                            n_jobs=self.patient.analysis_settings['nr_jobs'], 
                             decim=tfr_subsampling_factor, 
                             output='power')
 
         if output_filename != None:
             with h5py.File(output_filename, 'a') as h5f:
-                h5f.create_dataset('ch_names', data=self.data_channel_names, compression=6)
                 h5f.create_dataset('freqs', data=freqs, compression=6)
                 h5f.create_dataset('np_data', data=raw_data_np, compression=6)
                 h5f.create_dataset('tfr_data', data=tfr_data, compression=6)
+            ch_names_df = pd.DataFrame(np.arange(len(self.data_channel_names)), index=self.data_channel_names)
+            ch_names_df.to_hdf(output_filename, key='ch_names', mode='a')
+
             
 
     def split_to_pRF_runs(self, stage='tfr'):
@@ -255,13 +260,13 @@ class Acquisition2kHz(Acquisition):
     def __init__(self, raw_dir, run_nr, patient, task='pRF'):
        # call super() function
        super().__init__(raw_dir, run_nr, acq='2kHz', patient=patient, task='pRF')
-       print('Acquisition2kHz is ready')
+       print(f'Acquisition2kHz {run} for {patient} on task {task} created.')
 
 class Acquisition10kHz(Acquisition):
     def __init__(self, raw_dir, run_nr, patient, task='pRF'):
        # call super() function
        super().__init__(raw_dir, run_nr, acq='10kHz', patient=patient, task='pRF')
-       print('Acquisition10kHz is ready')
+       print(f'Acquisition10kHz {run} for {patient} on task {task} created.')
 
 class PRF_run:
     def __init__(self, bar_width, bar_refresh_time, bar_directions, bar_duration, blank_duration, bg_stim_array, aperture_array):

@@ -11,3 +11,4 @@ non_data_channels: ['ECG', 'DELT', 'EEG']
 task: 'pRF'
 acquisition_types: ['10kHz', '10kHz', '2kHz', '2kHz', '2kHz', '2kHz']
 nr_runs: 6
+nr_jobs: 8

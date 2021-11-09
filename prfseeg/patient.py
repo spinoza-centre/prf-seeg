@@ -33,8 +33,8 @@ class Patient:
 
         self.preprocessing_dir = os.path.join(derivatives_dir, 'prep', self.subject, 'func')
         self.localization_dir = os.path.join(derivatives_dir, 'prep', self.subject, 'loc')
-        self.tfr_dir = os.path.join(derivatives_dir, 'tfr', self.subject)
-        self.prf_dir = os.path.join(derivatives_dir, 'pRF', self.subject)
+        self.tfr_dir = os.path.join(derivatives_dir, 'tfr', self.subject, 'func')
+        self.prf_dir = os.path.join(derivatives_dir, 'pRF', self.subject, 'func')
 
         for d in (self.preprocessing_dir, self.localization_dir, self.tfr_dir, self.prf_dir):
             os.makedirs(d, exist_ok=True)
