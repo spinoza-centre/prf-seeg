@@ -15,7 +15,7 @@ class Patient:
     containing multiple runs of sEEG data as well as pre-op T1w and post-op CT anatomical images
     """
     # instance attributes
-
+    
     def __init__(self, subject, raw_dir, derivatives_dir):
         """[summary]
 
@@ -41,6 +41,9 @@ class Patient:
         self.filepath = os.path.abspath(getsourcefile(lambda:0))
         with open(os.path.join(os.path.split(os.path.split(self.filepath)[0])[0], 'analysis', 'config.yml'), 'r') as yf:
             self.analysis_settings = yaml.safe_load(yf)
+    
+    def __repr__(self):
+        return f'Patient "{self.subject}" at "{self.raw_dir}", derivatives at {self.derivatives_dir}'
 
     # instance method
     def gather_acquisitions(self):

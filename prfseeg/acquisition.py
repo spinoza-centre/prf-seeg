@@ -115,15 +115,15 @@ class Acquisition:
         dc_channels_indx = np.array([True if self.patient.analysis_settings['trigger_channels'] in ch else False for ch in self.raw.ch_names])
         dc_channels = np.array(self.raw.ch_names)[np.array(dc_channels_indx)]
 
-        dc_data = self.raw.get_data(picks=dc_channels)
+        self.dc_data = self.raw.get_data(picks=dc_channels)
 
-        self.bar_trigger_idx = np.argsort(dc_data.var(1))[-1]
+        self.bar_trigger_idx = np.argsort(self.dc_data.var(1))[-1]
         self.bar_trigger_ch = dc_channels[self.bar_trigger_idx]
-        self.blank_trigger_idx = np.argsort(dc_data.var(1))[-2]
+        self.blank_trigger_idx = np.argsort(self.dc_data.var(1))[-2]
         self.blank_trigger_ch = dc_channels[self.blank_trigger_idx]
 
-        self.blank_onsets, self.blank_onset_indx = self._timings_from_trig_channel(dc_data[self.blank_trigger_idx])
-        self.bar_onsets, self.bar_onset_indx = self._timings_from_trig_channel(dc_data[self.bar_trigger_idx])
+        self.blank_onsets, self.blank_onset_indx = self._timings_from_trig_channel(self.dc_data[self.blank_trigger_idx])
+        self.bar_onsets, self.bar_onset_indx = self._timings_from_trig_channel(self.dc_data[self.bar_trigger_idx])
 
         self.bar_onset_indx = np.setdiff1d(self.bar_onset_indx, self.blank_onset_indx)
 
@@ -167,14 +167,15 @@ class Acquisition:
                            notch_filter_frequencies=[50,100,150,200,250], 
                            raw_file_name=None,
                            output_file_name=None):
-        if self.raw == None:
+        if self.raw is None:
             self._read_raw(raw_file_name)
         # 1. notch filter
         # 2. resample
         # 3. t0 at 't' press
+        self._set_channel_types()
         self._get_data_channels()
         self.raw.load_data()
-        mne.set_eeg_reference(self.raw, verbose=True)
+        self.raw.set_eeg_reference(verbose=True)
 
         self.raw.notch_filter(notch_filter_frequencies, picks=self.signal_channels)
         self.raw.resample(resample_frequency, stim_picks=self.trigger_channels)
@@ -187,7 +188,7 @@ class Acquisition:
 
             first_sample = self.trial_data.eeg_tt.iloc[0] 
             last_sample = self.trial_data.eeg_tt.iloc[-1] \
-                + (self.experiment_settings['design']['blank_duration'] * resample_frequency) / self.raw.info['sfreq']
+                + (self.experiment_settings['design']['blank_duration'] * resample_frequency)
             
             # convert from index to time
             first_time = first_sample / self.raw.info['sfreq']
@@ -200,7 +201,7 @@ class Acquisition:
         
     def _get_data_channels(self, 
             raw_file_name=None):
-        if self.raw == None:
+        if self.raw is None:
             self._read_raw(raw_file_name)
 
         dc_channels_indx = np.array([True if 'DC' in ch else False for ch in self.raw.ch_names])
@@ -213,6 +214,24 @@ class Acquisition:
         self.signal_channels = np.arange(len(self.data_channel_bools))[self.data_channel_bools]
         self.trigger_channels = np.arange(len(self.raw.ch_names))[dc_channels_indx]
 
+    def _set_channel_types(self, 
+            raw_file_name=None):
+        if self.raw is None:
+            self._read_raw(raw_file_name)
+        ch_type_dict = {}
+        for chn in self.raw.ch_names:
+            if self.patient.analysis_settings['trigger_channels'] in chn:
+                ch_type_dict[chn] = 'stim'
+            elif self.patient.analysis_settings['non_data_channels'][0] in chn:
+                ch_type_dict[chn] = self.patient.analysis_settings['non_data_channel_types'][0]
+            elif self.patient.analysis_settings['non_data_channels'][1] in chn:
+                ch_type_dict[chn] = self.patient.analysis_settings['non_data_channel_types'][1]
+            elif self.patient.analysis_settings['non_data_channels'][2] in chn:
+                ch_type_dict[chn] = self.patient.analysis_settings['non_data_channel_types'][2]
+            else:
+                ch_type_dict[chn] = 'seeg'
+        self.raw.set_channel_types(ch_type_dict)
+
     def tfr(self, 
             raw_file_name=None, 
             tfr_logspace_low=0.1,
@@ -220,7 +239,18 @@ class Acquisition:
             tfr_logspace_nr=200,
             tfr_subsampling_factor=5,
             output_filename=None):
-        if self.raw == None:
+        """performs time-frequency decomposition based on the parameters in the arguments. 
+        Saves out the results in an h5 file, including trial_data, if path is given.
+
+        Args:
+            raw_file_name (str, path, optional): Path to raw input data. Defaults to None.
+            tfr_logspace_low (float, optional): lowest frequency defined as exp(tfr_logspace_low). Defaults to 0.1.
+            tfr_logspace_high (float, optional): highest frequency defined as exp(tfr_logspace_high). Defaults to 2.5.
+            tfr_logspace_nr (int, optional): nr of frequencies to sample in np.logspace. Defaults to 200.
+            tfr_subsampling_factor (int, optional): how much to subsample the resulting power samples. Saves memory. Defaults to 5.
+            output_filename ([type], optional): Path to hdf5 output file, in which all outputs will be stored. Defaults to None; nothing is stored but results are instance variables.
+        """            
+        if self.raw is None:
             self._read_raw(raw_file_name)
 
         self._get_data_channels()
@@ -243,8 +273,18 @@ class Acquisition:
                 h5f.create_dataset('tfr_data', data=tfr_data, compression=6)
             ch_names_df = pd.DataFrame(np.arange(len(self.data_channel_names)), index=self.data_channel_names)
             ch_names_df.to_hdf(output_filename, key='ch_names', mode='a')
+            if hasattr(self, 'trial_data'):
+                self.trial_data.to_hdf(output_filename, key='trial_data', mode='a')
 
-            
+    def load_tfr(self, tfr_filename):
+        if tfr_filename is None:
+            tfr_filename = self.raw_filename.replace('bids', 'derivatives/tfr').replace('.edf', '_ieeg.h5')
+        ch_names= pd.read_hdf(tfr_filename, 'ch_names').index
+        with h5py.File(output_filename, 'a') as h5f:
+            freqs = h5f.get('freqs')
+            tfr_data = h5f.get('tfr_data')
+        if not hasattr(self, 'trial_data'):
+            self.trial_data = pd.read_hdf(tfr_filename, 'trial_data')
 
     def split_to_pRF_runs(self, stage='tfr'):
         """[summary]
@@ -255,18 +295,19 @@ class Acquisition:
         # 1. find triggers
         # 2. find parameters for each pRF run
         # 3. 
+        self.load_tfr()
 
 class Acquisition2kHz(Acquisition):
     def __init__(self, raw_dir, run_nr, patient, task='pRF'):
        # call super() function
        super().__init__(raw_dir, run_nr, acq='2kHz', patient=patient, task='pRF')
-       print(f'Acquisition2kHz {run} for {patient} on task {task} created.')
+       print(f'Acquisition2kHz {run_nr} for {patient} on task {task} created.')
 
 class Acquisition10kHz(Acquisition):
     def __init__(self, raw_dir, run_nr, patient, task='pRF'):
        # call super() function
        super().__init__(raw_dir, run_nr, acq='10kHz', patient=patient, task='pRF')
-       print(f'Acquisition10kHz {run} for {patient} on task {task} created.')
+       print(f'Acquisition10kHz {run_nr} for {patient} on task {task} created.')
 
 class PRF_run:
     def __init__(self, bar_width, bar_refresh_time, bar_directions, bar_duration, blank_duration, bg_stim_array, aperture_array):

@@ -8,7 +8,8 @@ preprocessing:
 
 trigger_channels: 'DC'
 non_data_channels: ['ECG', 'DELT', 'EEG']
+non_data_channel_types: ['ecg', 'emg', 'eeg']
 task: 'pRF'
 acquisition_types: ['10kHz', '10kHz', '2kHz', '2kHz', '2kHz', '2kHz']
 nr_runs: 6
-nr_jobs: 8
+nr_jobs: 32
