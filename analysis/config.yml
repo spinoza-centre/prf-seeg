@@ -7,8 +7,10 @@ preprocessing:
   tfr_logspace_nr: 200
 
 trigger_channels: 'DC'
+trigger_threshold: 1
 non_data_channels: ['ECG', 'DELT', 'EEG']
 non_data_channel_types: ['ecg', 'emg', 'eeg']
+trigger_channel_names: ['DC09', 'DC10', 'DC11', 'DC12', 'DC13','DC14','DC15','DC16']
 task: 'pRF'
 acquisition_types: ['10kHz', '10kHz', '2kHz', '2kHz', '2kHz', '2kHz']
 nr_runs: 6
