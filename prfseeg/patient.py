@@ -141,20 +141,19 @@ class Patient:
         #         'No FreeSurfer T1w file for this subject found. Please run FreeSurfer first. ')
         #     return
 
-        reg_affine, _ = mne.transforms.compute_volume_registration(
+        self.reg_affine, _ = mne.transforms.compute_volume_registration(
             CT_orig, T1w_FS, pipeline='rigids')
-        CT_aligned = mne.transforms.apply_volume_registration(
+        self.CT_aligned = mne.transforms.apply_volume_registration(
             CT_orig, T1w_FS, reg_affine)
 
         self.gather_acquisitions()
         self.acquisitions[which_run]._read_raw()
-        # use estimated `trans` which was used when the locations were found previously
-        subj_trans = mne.coreg.estimate_head_mri_t(subject=self.subject,
+        self.subj_trans = mne.coreg.estimate_head_mri_t(subject=self.subject,
                                                    subjects_dir=self.subjects_dir)
-        subj_mni_fiducials = mne.coreg.get_mni_fiducials(subject=self.subject,
+        self.subj_mni_fiducials = mne.coreg.get_mni_fiducials(subject=self.subject,
                                                          subjects_dir=self.subjects_dir)
         gui = mne.gui.locate_ieeg(self.acquisitions[which_run].raw.info,
-                                  subj_trans,
-                                  CT_aligned,
+                                  self.subj_trans,
+                                  self.CT_aligned,
                                   subject=self.subject,
                                   subjects_dir=self.subjects_dir)
