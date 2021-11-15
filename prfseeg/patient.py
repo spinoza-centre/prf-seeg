@@ -136,10 +136,10 @@ class Patient:
         T1w_FS = nb.load(os.path.join(self.subjects_dir,
                          self.subject, 'mri', 'T1.mgz'))
 
-        if not os.path.isfile(T1w_FS):
-            print(
-                'No FreeSurfer T1w file for this subject found. Please run FreeSurfer first. ')
-            return
+        # if not os.path.isfile(T1w_FS):
+        #     print(
+        #         'No FreeSurfer T1w file for this subject found. Please run FreeSurfer first. ')
+        #     return
 
         reg_affine, _ = mne.transforms.compute_volume_registration(
             CT_orig, T1w_FS, pipeline='rigids')
