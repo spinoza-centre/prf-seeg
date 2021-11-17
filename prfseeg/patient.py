@@ -2,6 +2,7 @@ import os
 import mne
 import yaml
 import json
+import pickle
 import numpy as np
 import scipy as sp
 import pandas as pd
@@ -144,7 +145,7 @@ class Patient:
         self.reg_affine, _ = mne.transforms.compute_volume_registration(
             CT_orig, T1w_FS, pipeline='rigids')
         self.CT_aligned = mne.transforms.apply_volume_registration(
-            CT_orig, T1w_FS, reg_affine)
+            CT_orig, T1w_FS, self.reg_affine)
 
         self.gather_acquisitions()
         self.acquisitions[which_run]._read_raw()
@@ -152,6 +153,13 @@ class Patient:
                                                    subjects_dir=self.subjects_dir)
         self.subj_mni_fiducials = mne.coreg.get_mni_fiducials(subject=self.subject,
                                                          subjects_dir=self.subjects_dir)
+
+        self.subj_trans.save(os.path.join(self.localization_dir, 'subj-trans.fif'))                            
+        np.savetxt(os.path.join(self.localization_dir, 'reg_affine_CT2T1w.tsv'), self.reg_affine, delimiter='\t')
+        self.CT_aligned.to_filename(os.path.join(self.localization_dir, 'CT2T1w.nii.gz'))
+        with open(os.path.join(self.localization_dir, 'subj_mni_fiducials.pkl'), 'w') as f:
+            pickle.dump(self.subj_mni_fiducials, f)
+
         gui = mne.gui.locate_ieeg(self.acquisitions[which_run].raw.info,
                                   self.subj_trans,
                                   self.CT_aligned,
