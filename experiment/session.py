@@ -340,7 +340,7 @@ class PRFBarPassSession(PylinkEyetrackerSession):
             self.port.setData(trigger)
             time.sleep(self.settings['design'].get('ttl_trigger_delay'))
             self.port.setData(0)
-            time.sleep(self.settings['design'].get('ttl_trigger_delay'))
+            # time.sleep(self.settings['design'].get('ttl_trigger_delay'))
             # P = windll.inpoutx64
             # P.Out32(0x0378, self.settings['design'].get('ttl_trigger_blank')) # send the event code (could be 1-20)
             # time.sleep(self.settings['design'].get('ttl_trigger_delay')) # wait for 1 ms for receiving the code

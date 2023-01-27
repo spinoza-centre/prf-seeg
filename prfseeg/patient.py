@@ -119,7 +119,7 @@ class Patient:
                     output_filename=tfr_fn)
             acq.tfr_fn = tfr_fn
 
-    def find_electrode_positions(self, which_run=0):
+    def find_electrode_positions(self, which_run=0, method='flirt'):
         # 1. check if freesurfer has run
         # 2. run MNE coregistration
         # 3. save electrode positions in stereotypical format
@@ -129,6 +129,10 @@ class Patient:
         # on the server:
         mkdir /tank/shared/tmp/prf-seeg &&
         singularity run --cleanenv -B /tank -B /scratch /tank/shared/software/bids_apps/fmriprep-20.2.6.simg             --skip_bids_validation --participant-label 002 --anat-only --nthreads 30 --omp-nthreads 30 --fs-license-file /tank/shared/software/freesurfer_dev/license.txt --notrack -w /tank/shared/tmp/prf-seeg /scratch/2021/prf-seeg/data/bids/ /scratch/2021/prf-seeg/data/derivatives participant 
+
+        # and for manual/flirt reg:
+        mri_convert derivatives/freesurfer/sub-001/mri/T1.mgz derivatives/freesurfer/sub-001/mri/T1.nii.gz 
+        flirt -interp sinc -searchcost mutualinfo -in bids/sub-001/anat/sub-001_CT.nii.gz -ref derivatives/freesurfer/sub-001/mri/T1.nii.gz -omat derivatives/prep/sub-001/loc/CT2T1w_flirt.mat -out derivatives/prep/sub-001/loc/CT2T1w_flirt.nii.gz
         """
         CT_orig = nb.load(os.path.join(
             self.raw_anat_dir, f'{self.subject}_CT.nii.gz'))
@@ -137,15 +141,15 @@ class Patient:
         T1w_FS = nb.load(os.path.join(self.subjects_dir,
                          self.subject, 'mri', 'T1.mgz'))
 
-        # if not os.path.isfile(T1w_FS):
-        #     print(
-        #         'No FreeSurfer T1w file for this subject found. Please run FreeSurfer first. ')
-        #     return
-
-        self.reg_affine, _ = mne.transforms.compute_volume_registration(
-            CT_orig, T1w_FS, pipeline='rigids')
-        self.CT_aligned = mne.transforms.apply_volume_registration(
+        if method == 'mne': 
+            self.reg_affine, _ = mne.transforms.compute_volume_registration(CT_orig, T1w_FS, pipeline='rigids')
+            self.CT_aligned = mne.transforms.apply_volume_registration(
             CT_orig, T1w_FS, self.reg_affine)
+        elif method == 'flirt':
+            self.reg_affine = np.loadtxt(os.path.join(self.derivatives_dir, 'prep', 'loc', f'CT2T1w_flirt.mat'), delimiter='\t')
+            self.CT_aligned = nb.load(os.path.join(self.derivatives_dir, 'prep', 'loc', f'CT2T1w_flirt.nii.gz'))
+        else:
+            raise NotImplementedError(f'method {method} not implemented')
 
         self.gather_acquisitions()
         self.acquisitions[which_run]._read_raw()
@@ -155,10 +159,10 @@ class Patient:
                                                          subjects_dir=self.subjects_dir)
 
         self.subj_trans.save(os.path.join(self.localization_dir, 'subj-trans.fif'))                            
-        np.savetxt(os.path.join(self.localization_dir, 'reg_affine_CT2T1w.tsv'), self.reg_affine, delimiter='\t')
-        self.CT_aligned.to_filename(os.path.join(self.localization_dir, 'CT2T1w.nii.gz'))
-        with open(os.path.join(self.localization_dir, 'subj_mni_fiducials.pkl'), 'w') as f:
-            pickle.dump(self.subj_mni_fiducials, f)
+        np.savetxt(os.path.join(self.localization_dir, f'reg_affine_CT2T1w_{method}.tsv'), self.reg_affine, delimiter='\t')
+        # self.CT_aligned.to_filename(os.path.join(self.localization_dir, 'CT2T1w.nii.gz'))
+        # with open(os.path.join(self.localization_dir, 'subj_mni_fiducials.pkl'), 'w') as f:
+            # pickle.dump(self.subj_mni_fiducials, f)
 
         gui = mne.gui.locate_ieeg(self.acquisitions[which_run].raw.info,
                                   self.subj_trans,
